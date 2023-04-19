@@ -12,11 +12,11 @@ function sendMessage(text) {
     p.textContent = text;
 
     // If the last message was sent by another user, create a timestamp and insert it into the chat log
-    let lastMessage = messageHistory[messageHistory.length-1];
-    if(lastMessage != client) {
+    let lastMessage = messageHistory[messageHistory.length - 1];
+    if (lastMessage != client) {
         createTimestamp();
     }
-    
+
     // Append the <p> element to the message-box-sender element
     sender.appendChild(p);
     // Append the message-box-sender element to container-chat element
@@ -33,19 +33,19 @@ function createTimestamp() {
 
     let date = new Date();
     let month = date.getMonth() + 1;
-    let day = date.getDay();
+    let day = date.getDate();
     let year = date.getFullYear();
     let hour = date.getHours();
     let minute = date.getMinutes();
     let amPm = hour >= 12 ? "PM" : "AM";
 
     // Converty hour from 24-hour to 12-hour format
-    if(hour > 12) {
+    if (hour > 12) {
         hour -= 12;
     }
 
     // Add leading zeroes to single-digit minutes
-    if(minute < 10) {
+    if (minute < 10) {
         minute = '0' + minute;
     }
 
