@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = process.env.MONGO_URI;
+const dbName = "ChatAppDb";
 
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -12,26 +13,15 @@ const client = new MongoClient(uri, {
     }
 });
 
-async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        console.log("Successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
 
-    }
+function getClient() {
+    return client;
 }
 
-async function insertMessage(uid, message) {
-    try {
-        // Connect client to server
-        await client.connect();
-        await client.db("ChatAppDb").collection("users").insertOne({ uid: `${uid}`, message: `${message}` });
-    } finally {
-        await client.close();
-    }
-}
+module.exports = {
+    getClient,
+    dbName,
+};
 
-insertMessage("123", "abc");
+
 

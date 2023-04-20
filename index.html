@@ -3,19 +3,28 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Website</title>
+    <title>Wisp - Register</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="resources/images/wisp2.png">
     <meta name="viewport" content="width=device-width">
 </head>
 
 <body>
     <div class="container">
-        <input type="text" class="register-input-field" placeholder="Enter your name...">
-        <button class="register-button" onclick="enterChatRoom()">
-            <p>Enter Chat</p>
+        <img src="resources/images/wisp2.png" width="128" height="128" class="wisp-logo">
+        <h1>Wisp</h1>
+        <input type="text" class="register-input-field" id="email-field" placeholder="Email">
+        <input type="text" class="register-input-field" id="password-field" oninput="passwordFieldsMatch()"
+            placeholder="Password">
+        <input type="text" class="register-input-field" id="confirm-password-field" oninput="passwordFieldsMatch()"
+            placeholder="Confirm Password">
+        
+        <button class="register-button" onclick="registerButton()">
+            <p>Register</p>
         </button>
+        
     </div>
-
+    <p id="password-error"></p>
     <script src="script.js"></script>
 </body>
 
