@@ -1,9 +1,10 @@
-function registerButton() {
+function clientRegister() {
+    animateRegisterButton();
 	// If password field does not validate, return and dont send the request
 	if (!validatePassword()) {
 		return;
 	}
-	
+
 	// Get password & username from fields
 	const emailField = document.getElementById("email-field");
 	const passwordField = document.getElementById("password-field");
@@ -31,38 +32,6 @@ function registerButton() {
 		});
 }
 
-function animateLogo() {
-	const logo = document.getElementsByClassName("wisp-logo");
-	const maxRotAngle = 9;
-	const rotateTimeMS = 6600;
-	let sign = 1;
-	let startTime = performance.now();
-
-	function updateLogoRotation() {
-		// Start elapsed timer
-		const elapsed = performance.now() - startTime;
-		// Progress of rotation
-		const t = elapsed / rotateTimeMS;
-		const rotAngle = Math.PI * t;
-		const value = Math.sin(rotAngle);
-		// Convert value from [0, 1] to [-1, -1]
-		const result = value * 2 - 1;
-
-		logo[0].style.transform = `rotate(${maxRotAngle * result}deg)`;
-		if (elapsed < rotateTimeMS) {
-			requestAnimationFrame(updateLogoRotation);
-		}
-		// Once rotation finishes, alternate the direction of the rotation
-		else if (elapsed >= rotateTimeMS) {
-			// Alternates sign to negative, this makes the rotAngle negative
-			sign *= -1;
-			startTime = performance.now();
-			// Rotation finishes
-			requestAnimationFrame(updateLogoRotation);
-		}
-	}
-	requestAnimationFrame(updateLogoRotation);
-}
 
 function passwordFieldsMatch() {
 	let passFields = [document.getElementById("password-field"), document.getElementById("confirm-password-field")];
@@ -73,6 +42,7 @@ function passwordFieldsMatch() {
 		return false;
 	}
 }
+
 
 const passwordInputField = document.getElementById("password-field");
 const confirmPasswordInputField = document.getElementById("confirm-password-field");
@@ -120,10 +90,30 @@ function validatePassword() {
 	return true;
 }
 
+// If enter is pressed, try and "submit" (hit the register button)
+function submitWithEnter(keyPressed) {
+    if(keyPressed.key === 'Enter') {
+        console.log("Try register");
+        clientRegister();
+    } 
+}
+
+function animateRegisterButton() {
+    const registerButton = document.getElementById("register-button");
+    let step = 1;
+
+    function fadeColors() {
+        if(step >= 33) {
+            clearInterval(fadeColors);
+        } else {
+            let a = step/33;
+            console.log(a);
+            registerButton.style.backgroundColor = `rgba(2, 102, 189, ${a})`;
+            step++;
+        }
+    }
+    setInterval(fadeColors, 8);
+}
+
 // Add event listeners
-passwordInputField.addEventListener('input', validatePassword);
-confirmPasswordInputField.addEventListener('input', validatePassword);
-
-// Animate wisp logo
-animateLogo();
-
+document.addEventListener('keydown', submitWithEnter);

@@ -18,14 +18,15 @@
             placeholder="Password">
         <input type="text" class="register-input-field" id="confirm-password-field" oninput="passwordFieldsMatch()"
             placeholder="Confirm Password">
-        
-        <button class="register-button" onclick="registerButton()">
+
+        <button class="register-button" id="register-button" onclick="clientRegister()">
             <p>Register</p>
         </button>
-        
     </div>
+
     <p id="password-error"></p>
-    <script src="script.js"></script>
+    <script src="client-register.js"></script>
+    <script src="client.js"></script>
 </body>
 
 </html>
