@@ -2,7 +2,7 @@ const userController = require('./userController')
 
 const express = require('express');
 const bodyParser = require('body-parser')
-const path = require('path')
+const path = require('path');
 const app = express();
 const port = 8000;
 
@@ -60,15 +60,14 @@ app.post('/login', async (req, res) => {
         // Try to login
         let loginAttempt = userController.loginUser(userCredentials.email, userCredentials.password);
 
-        if (loginAttempt === true) {
-            // TODO: Return webpage of website menu or chatroom
-            console.log("True");
+        if (await loginAttempt === true) {
+            const sessionToken = await userController.generateSessionToken(userCredentials.email);
+            console.log(`${userCredentials.email} has logged in, sessionToken: ${sessionToken}`);
+            res.cookie('session', sessionToken);
+            res.send("Success!");
         }
         else {
-            // TODO: Tell user login attempt failed
-            // await loginAttempt
             res.send(await loginAttempt);
-        
         }
     }
     catch (err) {

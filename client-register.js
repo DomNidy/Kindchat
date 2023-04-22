@@ -107,7 +107,6 @@ function animateRegisterButton() {
             clearInterval(fadeColors);
         } else {
             let a = step/33;
-            console.log(a);
             registerButton.style.backgroundColor = `rgba(2, 102, 189, ${a})`;
             step++;
         }

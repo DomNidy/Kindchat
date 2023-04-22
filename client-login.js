@@ -27,7 +27,6 @@ function clientLogin() {
 			response.text().then((response_text) => {
 				passwordErrorText.innerText = response_text;
 			});
-
 		} else {
 			console.error("Error logging in: ", response.statusText);
 		}
@@ -54,7 +53,6 @@ function animateLoginButton() {
             clearInterval(fadeColors);
         } else {
             let a = step/33;
-            console.log(a);
             loginButton.style.backgroundColor = `rgba(2, 102, 189, ${a})`;
             step++;
         }
