@@ -1,4 +1,4 @@
-const userController = require('./userController')
+const userController = require('./userController');
 
 const express = require('express');
 const bodyParser = require('body-parser')
@@ -74,6 +74,4 @@ app.post('/login', async (req, res) => {
         console.log("Could not login:", err);
     }
 });
-
-
 

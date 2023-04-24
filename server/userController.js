@@ -1,20 +1,15 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
-const { getClient, dbName } = require('./database.js')
+const { getClientAndDB, dbName } = require('./database.js')
 const { randomUUID } = require('crypto');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
 async function registerUser(email, password) {
-    let client;
+    let client, db;
     try {
         // Get client
-        client = getClient();
-        // Connect client
-        await client.connect();
-
-        // Get reference to db
-        const db = client.db(dbName);
+        const { client, db } = await getClientAndDB(email);
 
         // Hash password
         const saltRounds = 10;
@@ -36,7 +31,8 @@ async function registerUser(email, password) {
     } finally {
         // If client exists, close it
         if (client) {
-            client.close();
+            console.log("Closing client");
+            await client.close();
         }
     }
 }
@@ -45,13 +41,10 @@ async function loginUser(email, password) {
     let client;
     try {
         // Get client
-        client = getClient();
-        // Connect client to db
-        await client.connect();
-        // Reference to db
-        const db = client.db(dbName);
+        const { client, db } = await getClientAndDB(email);
+
         // Reference to users collection
-        const usersCollection = db.collection('users');
+        const usersCollection = await db.collection('users');
 
         const user = await usersCollection.findOne({ email: email });
 
@@ -81,30 +74,34 @@ async function loginUser(email, password) {
 
     } finally {
         if (client) {
-            client.close();
+            console.log("Closing client");
+            await client.close();
         }
     }
 }
 
 // Generates a session Token and then creates and inserts a sessionToken object on the database
 async function generateSessionToken(email) {
-    let client;
+    let client, db;
     try {
         // Get past tokens the user that are still stored in the db
-        const needsNewToken = await checkIfUserHasActiveSessionToken(email).then(async (pastTokens) => {
-            return await removeNonExpiredDuplicates(pastTokens);
-        });
+        const needsNewToken = await retrieveUserPastSessionTokens(email)
+            .then(
+                async (pastTokens) => {
+                    // If we have past tokens to check for expired and duplicates
+                    if (pastTokens !== false) {
+                        return await removeExpiredAndDuplicateTokens(pastTokens, email);
+                    }
+                    return false;
+                });
 
         if (needsNewToken === true) {
             console.log(`User ${email} needs a new session token, generating one...`)
-            // Get client reference
-            let client = getClient();
-            // Connect client
-            await client.connect();
-            // Get db reference
-            const db = client.db(dbName);
+
+            // Get client
+            const { client, db } = await getClientAndDB(email);
             // Reference to sessions collection
-            const sessionsCollection = db.collection('sessions');
+            const sessionsCollection = await db.collection('sessions');
 
             // Generates the actual uuid assosciated with the sessionToken (the string of numbers and letters)
             const tokenID = randomUUID();
@@ -130,21 +127,21 @@ async function generateSessionToken(email) {
     }
     finally {
         if (client) {
-            client.close();
+            console.log("Closing client");
+            await client.close();
         }
     }
 }
 
-// Checks if user already has a session token active
-async function checkIfUserHasActiveSessionToken(email) {
-    let client
+// Checks database to see if the user has multiple tokens already
+// If the user does, return an array of their past session tokens, this is used so we can cull expired/duplicate tokens
+async function retrieveUserPastSessionTokens(email) {
+    let client, db;
     try {
-        client = getClient();
-        await client.connect();
-        // Get db reference
-        const db = client.db(dbName);
+        const { client, db } = await getClientAndDB(email);
+
         // Reference to sessions collection
-        const sessionsCollection = db.collection('sessions');
+        const sessionsCollection = await db.collection('sessions');
 
         // Array of sessionToken objects the user previously had
         const usersPreviousTokens = (sessionsCollection.find({ email: email })).toArray();
@@ -155,31 +152,39 @@ async function checkIfUserHasActiveSessionToken(email) {
     }
     finally {
         if (client) {
-            client.close();
+            console.log("Closing client");
+            await client.close();
         }
     }
 }
 
-// Returns true if user needs a new token, if false returns the active token
-async function removeNonExpiredDuplicates(tokenArray) {
-    let client;
+// Given an array of tokens from a single user, remove tokens that are expired, or if the user has multiple tokens active which are not expired- 
+// remove all such that only one active token remains.
+// Returns true if user needs a new token, returns the active token if false
+async function removeExpiredAndDuplicateTokens(tokenArray, email) {
+    let client, db;
     try {
-        client = getClient();
-        // Connect client
-        await client.connect();
-        // Get db reference
-        const db = client.db(dbName);
+        // Get client
+        const { client, db } = await getClientAndDB(email);
+
         // Reference to sessions collection
-        const sessionsCollection = db.collection('sessions');
+        const sessionsCollection = await db.collection('sessions');
 
         // If the user needs a new token to be generated
         let needsNewToken = true;
+        // If the user has non-expired tokens, we will return this one
+        let sessionToken;
+        // We separate these tokens into separate arrays because we will keep the final item in the nonExpiredTokens to be removed
+        // The user will continue using this token which hasnt expired yet, the other ones will be removed
         // Tokens that have not reached their expiration time
         const nonExpiredTokensToBeRemoved = []
+        // Tokens that have expired
+        const expiredTokensToBeRemoved = []
 
         // If an element is not expired, add it to the array of tokens to remove
         tokenArray.forEach(element => {
             if (element.expires <= Date.now()) {
+                expiredTokensToBeRemoved.push(element._id);
                 console.log(JSON.stringify(element) + " is expired")
             }
             else {
@@ -189,23 +194,55 @@ async function removeNonExpiredDuplicates(tokenArray) {
 
         // If there are any tokens in this array that means the user has a non-expired token already and we wont need to generate them a new one
         if (nonExpiredTokensToBeRemoved.length >= 1) {
-            needsNewToken = nonExpiredTokensToBeRemoved.pop();;            
+            needsNewToken = false;
+            sessionToken = await sessionsCollection.findOne({ _id: nonExpiredTokensToBeRemoved.pop() });
         }
 
         // Remove the nonExpired duplicate tokens
-        const idsToDelete = nonExpiredTokensToBeRemoved.map(id => new ObjectId(id));
+        const idsToDelete = nonExpiredTokensToBeRemoved.concat(expiredTokensToBeRemoved).map(id => new ObjectId(id));
         const result = await sessionsCollection.deleteMany({ _id: { $in: idsToDelete } });
 
-        console.log(`Removed ${result.deletedCount} duplicate session tokens`);
-        return needsNewToken;
+        // If we delete any tokens, print out how many were deleted
+        if (result.deletedCount) {
+            console.log(`Removed ${result.deletedCount} duplicate and or expired session token(s).`);
+        }
+
+        return sessionToken.tokenID;
     }
     catch (err) {
         console.log(err);
     }
     finally {
         if (client) {
-            client.close();
+            console.log("Closing client");
+            await client.close();
         }
+    }
+}
+
+// When the user requests content needing a session token, this function will ensure their session token is valid & has not expired
+async function validateSessionToken(tokenID, email) {
+    let client, db;
+    try {
+        // Get client
+        const { client, db } = await getClientAndDB(email);
+        // Get sessions collection
+        const sessionsCollection = await db.collection('sessions');
+
+        const tokenResult = sessionsCollection.findOne({ tokenID: tokenID });
+
+        if (!tokenResult) {
+            console.log("No token found!", tokenResult);
+            return false;
+        }
+        else {
+            console.log("Token found", tokenResult)
+            return true;
+        }
+
+    }
+    catch (err) {
+        console.log(err);
     }
 }
 
