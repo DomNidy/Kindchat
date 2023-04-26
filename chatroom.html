@@ -5,13 +5,33 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <script src="chat-script.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles-chatroom.css">
+    <script src="client-scripts/client-chat.js"></script>
     <title>Chatroom</title>
 </head>
 
 <body>
-    
+    <div class="container-side-bar">
+        <div class="logobox">
+            <h1>Wisp</h1>
+            <img src="resources/images/wisp2.png">
+        </div>
+        <div class="container-open-chat-box">
+
+            <div class="open-chat-box">
+                <p class="chatter-name">Anne</p>
+                <p class="chat-last-message">Sure! Gimme a second I have to finish walking the dog.</p>
+                <p class="chat-last-message-time">4/18/2023 5:45 PM</p>
+            </div>
+
+            <div class="open-chat-box">
+                <p class="chatter-name">Kyle</p>
+                <p class="chat-last-message">Sorry, forgot lol.</p>
+                <p class="chat-last-message-time">4/15/2023 2:13 PM</p>
+            </div>
+        </div>
+    </div>
     <div class="container-chat">
         <div class="container-user-bar">
             <h3>Conversation with Anne</h3>
@@ -31,12 +51,12 @@
             <p>Sure! Gimme a second I have to finish walking the dog.</p>
         </div>
 
-        
+
     </div>
     <div class="chat-input-field">
         <input type="text" placeholder="Send a message..." id="chat-input" class="register-input-field">
     </div>
-    
+
 </body>
 
 </html>

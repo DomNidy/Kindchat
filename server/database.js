@@ -28,18 +28,6 @@ async function getClientAndDB(email) {
     return cachedClients[email];
 }
 
-// Becaus
-
-// Closes the users active client 
-async function closeClient(email) {
-    if (cachedClients[email]) {
-
-        delete cachedClients.email;
-    }
-}
-
-
-
 module.exports = {
     getClientAndDB,
     dbName,

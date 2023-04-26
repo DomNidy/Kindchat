@@ -92,10 +92,18 @@ async function generateSessionToken(email) {
                     if (pastTokens !== false) {
                         return await removeExpiredAndDuplicateTokens(pastTokens, email);
                     }
-                    return false;
+                    return true;
                 });
 
-        if (needsNewToken === true) {
+        // If needsNewToken is explicity equal to true before type-conversion comparisson is done 
+        // We do this because needsNewToken can either be true or the active session token
+        // If we were to do only "if(needsNewToken == true)" this condition would always run by default since the session token string would evaluate to true
+
+        if (needsNewToken !== true) {
+            console.log(`User ${email} already has an active session token`)
+            return needsNewToken;
+        }
+        else {
             console.log(`User ${email} needs a new session token, generating one...`)
 
             // Get client
@@ -117,10 +125,7 @@ async function generateSessionToken(email) {
             console.log("Inserted a session token:", insertResult);
             return tokenID;
         }
-        else {
-            console.log(`User ${email} already has an active session token`)
-            return needsNewToken;
-        }
+
     }
     catch (err) {
         console.log(err);
@@ -135,6 +140,7 @@ async function generateSessionToken(email) {
 
 // Checks database to see if the user has multiple tokens already
 // If the user does, return an array of their past session tokens, this is used so we can cull expired/duplicate tokens
+// If the user does not have any previous tokens, return false
 async function retrieveUserPastSessionTokens(email) {
     let client, db;
     try {
@@ -144,7 +150,13 @@ async function retrieveUserPastSessionTokens(email) {
         const sessionsCollection = await db.collection('sessions');
 
         // Array of sessionToken objects the user previously had
-        const usersPreviousTokens = (sessionsCollection.find({ email: email })).toArray();
+        const usersPreviousTokens = (await sessionsCollection.find({ email: email })).toArray();
+
+        // If we do not have any previous tokens, return false
+        if (await usersPreviousTokens == false) {
+            return false;
+        }
+
         return await usersPreviousTokens;
     }
     catch (err) {
@@ -174,14 +186,17 @@ async function removeExpiredAndDuplicateTokens(tokenArray, email) {
         let needsNewToken = true;
         // If the user has non-expired tokens, we will return this one
         let sessionToken;
+
         // We separate these tokens into separate arrays because we will keep the final item in the nonExpiredTokens to be removed
         // The user will continue using this token which hasnt expired yet, the other ones will be removed
+
         // Tokens that have not reached their expiration time
         const nonExpiredTokensToBeRemoved = []
         // Tokens that have expired
         const expiredTokensToBeRemoved = []
 
-        // If an element is not expired, add it to the array of tokens to remove
+        // If an element is not expired, add it to the array of nonExpired tokens
+        // If an element is expired, add it to the array of expired tokens
         tokenArray.forEach(element => {
             if (element.expires <= Date.now()) {
                 expiredTokensToBeRemoved.push(element._id);
@@ -207,7 +222,10 @@ async function removeExpiredAndDuplicateTokens(tokenArray, email) {
             console.log(`Removed ${result.deletedCount} duplicate and or expired session token(s).`);
         }
 
-        return sessionToken.tokenID;
+        if (!needsNewToken) {
+            return sessionToken.tokenID;
+        }
+        return true;
     }
     catch (err) {
         console.log(err);
@@ -221,7 +239,7 @@ async function removeExpiredAndDuplicateTokens(tokenArray, email) {
 }
 
 // When the user requests content needing a session token, this function will ensure their session token is valid & has not expired
-async function validateSessionToken(tokenID, email) {
+async function isValidSessionToken(tokenID, email) {
     let client, db;
     try {
         // Get client
@@ -229,21 +247,22 @@ async function validateSessionToken(tokenID, email) {
         // Get sessions collection
         const sessionsCollection = await db.collection('sessions');
 
-        const tokenResult = sessionsCollection.findOne({ tokenID: tokenID });
+        // Attempt to find the tokenID in the collection
+        const tokenResult = await sessionsCollection.findOne({ tokenID: tokenID });
 
+        // If the token does not exist in the database, return false
         if (!tokenResult) {
-            console.log("No token found!", tokenResult);
+            console.log(`tokenID: '${tokenID}' does not exist.`)
             return false;
         }
-        else {
-            console.log("Token found", tokenResult)
-            return true;
-        }
 
+        // If the tokens expiry time is greater than the current time, return true, if not, return false
+        return tokenResult.expires > Date.now();
     }
     catch (err) {
         console.log(err);
+        return false;
     }
 }
 
-module.exports = { registerUser, loginUser, generateSessionToken };
+module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken };

@@ -1,14 +1,16 @@
 const userController = require('./userController');
 
 const express = require('express');
-const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
 const port = 8000;
 
-
-app.use(express.static(path.join(__dirname, '..')), bodyParser.json());
-
+// Middleware
+app.use(bodyParser.json())
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '..')));
 
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
@@ -60,18 +62,25 @@ app.post('/login', async (req, res) => {
         // Try to login
         let loginAttempt = userController.loginUser(userCredentials.email, userCredentials.password);
 
+        // If the login attempt was successful (matching credentials)
         if (await loginAttempt === true) {
+            // Handle sessionToken generation / retrieval
             const sessionToken = await userController.generateSessionToken(userCredentials.email);
             console.log(`${userCredentials.email} has logged in, sessionToken: ${sessionToken}`);
+
+            // Set session token cookie
             res.cookie('session', sessionToken);
-            res.send("Success!");
+            res.send(res.redirect('/chatroom'));
+            
         }
+        // If the login attempt failed (invalid credentials)
         else {
-            res.send(await loginAttempt);
+            res.statusMessage = await loginAttempt;
+            res.status(400).end();
         }
     }
     catch (err) {
-        console.log("Could not login:", err);
+        console.log("Login error:", err);
     }
 });
 
