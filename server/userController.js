@@ -271,4 +271,48 @@ async function isValidSessionToken(tokenID, email) {
     }
 }
 
-module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken };
+// sessionToken: session token of user who is sending the request
+// userToRequest: the user to send friend request to
+async function sendFriendRequest(userToRequest, sessionToken) {
+    let client, db;
+    try {
+        // Get client
+        const { client, db } = await getClientAndDB(sessionToken);
+        // Validate session token
+        // Since we do not have the email of the request, we will just use the sessionToken for the cachedClients key in the database module
+        if (!await isValidSessionToken(sessionToken, sessionToken)) {
+            console.log("Session token is invalid");
+            return false;
+        }
+
+        // Try to find the userToRequest
+        // Grab users collection
+        const usersCollection = await db.collection('users');
+        // Query users collection for userToRequest (the email)
+        const result = await usersCollection.findOne({ email: userToRequest });
+
+        // If we cannot find the userToRequest, return
+        if (!result) {
+            console.log(`${userToRequest} could not be found...`);
+            return false;
+        }
+
+        // If the user is found
+        console.log(result);
+        const modifyResult = await usersCollection.updateOne(
+            { email: userToRequest },
+            {
+                $push: {
+                    incomingFriendRequests: "Put the requesters email here, Implement this!"
+                }
+            }
+        );
+
+        console.log(modifyResult);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+
+module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken, sendFriendRequest };

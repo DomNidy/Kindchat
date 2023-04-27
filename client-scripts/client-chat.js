@@ -62,11 +62,31 @@ function onMessageInputChanged(event) {
         // Clear inputElement contents after sending message
         inputElement.value = "";
     }
+}
 
+// This is 
+function addFriend(event) {
+    if (event.key == "Enter") {
+        const inputFindFriends = document.getElementById("find-friends-input");
+        fetch('/send-friend-request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                accountToRequest: inputFindFriends.value
+            })
+        }).then(response => {
+            console.log(response);
+        })
+    }
 }
 
 // Wait until all content is loaded to select elements
 document.addEventListener("DOMContentLoaded", function () {
     const inputElement = document.getElementById("chat-input");
+    const inputFindFriends = document.getElementById("find-friends-input");
+
     inputElement.addEventListener("keydown", onMessageInputChanged);
+    inputFindFriends.addEventListener("keyup", addFriend);
 })

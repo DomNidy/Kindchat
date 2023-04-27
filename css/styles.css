@@ -40,16 +40,6 @@ button p {
     margin: 0 0 0 0;
 }
 
-input[type="text"]:hover {
-    box-shadow: 4px 4px rgba(0.7, 0.7, 25, 0.22);
-}
-
-input[type="text"]:focus {
-    outline: none;
-    border: none;
-    box-shadow: 4px 4px rgba(0.7, 0.7, 25, 0.22);
-}
-
 #password-error {
     font-size: 17px;
     color: rgba(1, 1, 1, 0.474);
@@ -69,6 +59,16 @@ input[type="text"]:focus {
     background-color: #f3f3f3;
     transition: box-shadow 0.15s;
     font-size: 15px;
+}
+
+.register-input-field:hover {
+    box-shadow: 4px 4px rgba(0.7, 0.7, 25, 0.22);
+}
+
+.register-input-field:focus {
+    outline: none;
+    border: none;
+    box-shadow: 4px 4px rgba(0.7, 0.7, 25, 0.22);
 }
 
 .register-button {

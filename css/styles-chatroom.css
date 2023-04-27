@@ -12,8 +12,21 @@ body {
     background-color: rgb(28, 46, 136);
 }
 
+.find-friends-input {
+    display: block;
+    border-radius: 5px;
+    text-decoration: none;
+    outline: none;
+    background-color: #cbccce;
+    margin-bottom: 10px;
+    height: 23px;
+}
+
+
 .container-open-chat-box {
-    display: flexbox;
+    display: flex;
+    flex-direction: column;
+    float: left;
     width: auto;
     height: auto;
 }

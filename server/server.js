@@ -98,3 +98,13 @@ app.post('/login', async (req, res) => {
     }
 });
 
+// Route handler for adding friends
+app.post('/send-friend-request', async (req, res) => {
+    try {
+        let result = await userController.sendFriendRequest(req.body.accountToRequest, req.cookies.session);
+        
+    }
+    catch (err) {
+        console.log("Error adding friend");
+    }
+});
