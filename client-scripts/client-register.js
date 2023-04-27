@@ -1,5 +1,5 @@
 function clientRegister() {
-    animateRegisterButton();
+	animateRegisterButton();
 	// If password field does not validate, return and dont send the request
 	if (!validatePassword()) {
 		return;
@@ -8,6 +8,7 @@ function clientRegister() {
 	// Get password & username from fields
 	const emailField = document.getElementById("email-field");
 	const passwordField = document.getElementById("password-field");
+	const passwordErrorText = document.getElementById("password-error");
 
 	console.log("Sending request to register...");
 
@@ -23,9 +24,11 @@ function clientRegister() {
 	})
 		.then(response => {
 			if (response.ok) {
-				console.log("Registered successfully!");
+				console.log("Registered successfully!", response);
+				window.location.href = response.url;
 			} else {
 				console.error("Error registering user:", response.statusText);
+				passwordErrorText.innerText = response.statusText;
 			}
 		}).catch(error => {
 			console.error("Error registering user:", error)
@@ -92,26 +95,26 @@ function validatePassword() {
 
 // If enter is pressed, try and "submit" (hit the register button)
 function submitWithEnter(keyPressed) {
-    if(keyPressed.key === 'Enter') {
-        console.log("Try register");
-        clientRegister();
-    } 
+	if (keyPressed.key === 'Enter') {
+		console.log("Try register");
+		clientRegister();
+	}
 }
 
 function animateRegisterButton() {
-    const registerButton = document.getElementById("register-button");
-    let step = 1;
+	const registerButton = document.getElementById("register-button");
+	let step = 1;
 
-    function fadeColors() {
-        if(step >= 33) {
-            clearInterval(fadeColors);
-        } else {
-            let a = step/33;
-            registerButton.style.backgroundColor = `rgba(2, 102, 189, ${a})`;
-            step++;
-        }
-    }
-    setInterval(fadeColors, 8);
+	function fadeColors() {
+		if (step >= 33) {
+			clearInterval(fadeColors);
+		} else {
+			let a = step / 33;
+			registerButton.style.backgroundColor = `rgba(2, 102, 189, ${a})`;
+			step++;
+		}
+	}
+	setInterval(fadeColors, 8);
 }
 
 // Add event listeners

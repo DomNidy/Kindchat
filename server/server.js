@@ -37,14 +37,28 @@ app.get('/chatroom', async (req, res) => {
 app.post('/register', async (req, res) => {
     try {
         console.log("Trying to register with: ", req.body);
-        const user = ({
+        const userCredentials = ({
             email: req.body.email,
             password: req.body.password
         });
         console.log("Atempting to register user...")
         // Register in database
-        let registerAttempt = userController.registerUser(user.email, user.password);
-        console.log(registerAttempt);
+        let registerAttempt = await userController.registerUser(userCredentials.email, userCredentials.password);
+
+        // If the register attempt fails (user already has an account)
+        if (registerAttempt[0] === false) {
+            console.log(registerAttempt[1]);
+            res.statusMessage = registerAttempt[1];
+            res.status(400).end();
+            return;
+        }
+
+        // Generate session token for new user
+        const sessionToken = await userController.generateSessionToken(userCredentials.email);
+        console.log(`${userCredentials.email} has successfully registered, generated a new sessionToken: ${sessionToken}`);
+
+        res.cookie('session', sessionToken);
+        res.send(res.redirect('/chatroom'));
     }
     catch (err) {
         console.log("Catch in server.js", err);
@@ -71,7 +85,7 @@ app.post('/login', async (req, res) => {
             // Set session token cookie
             res.cookie('session', sessionToken);
             res.send(res.redirect('/chatroom'));
-            
+
         }
         // If the login attempt failed (invalid credentials)
         else {

@@ -15,6 +15,12 @@ async function registerUser(email, password) {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+        // Check to see if account already exists
+        const accountResult = await db.collection('users').findOne({ email: email });
+        if (accountResult != null) {
+            return [false, `${email} already has an account`];
+        }
+
         // Create user object
         const newUser = {
             email: email,
@@ -25,7 +31,7 @@ async function registerUser(email, password) {
         const result = await db.collection('users').insertOne(newUser);
 
         console.log('User registered successfully: ', result.insertedId);
-        return result.insertedId;
+        return [true, result.insertedId];
     } catch (err) {
         console.log("Error registering user:", err);
     } finally {
