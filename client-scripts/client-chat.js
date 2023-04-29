@@ -2,6 +2,16 @@
 const messageHistory = [];
 const client = "me";
 
+// Returns the cookie containing the current users UUID
+function getCurrentUUIDCookie() {
+    // Parse the uuid cookie
+    const uuidPattern = /uuid=([\w-]+)/;
+    const match = document.cookie.match(uuidPattern);
+
+    if (match) return match[1];
+    return false;
+}
+
 function sendMessage(text) {
     const containerChat = document.querySelector(".container-chat");
     const sender = document.createElement("div");
@@ -64,26 +74,60 @@ function onMessageInputChanged(event) {
     }
 }
 
-// This is 
+// Sends a friend request
 function addFriend(event) {
     if (event.key == "Enter") {
         const inputFindFriends = document.getElementById("find-friends-input");
-        fetch('/send-friend-request', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                accountToRequest: inputFindFriends.value
+
+        // Parse the uuid cookie
+        const uuid = getCurrentUUIDCookie();
+
+        // If we find a uuid from the cookies, send the request
+        if (uuid) {
+            fetch('/friend-requests', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uuid: uuid,
+                    accountToRequest: inputFindFriends.value
+                })
+            }).then(response => {
+                console.log(response);
             })
-        }).then(response => {
-            console.log(response);
-        })
+        }
+    }
+}
+
+
+
+// Gets the incoming friend requests from the api
+async function getIncomingFriendRequests() {
+    const uuid = getCurrentUUIDCookie();
+
+    if (uuid) {
+        try {
+            const response = await fetch(`/friend-requests/${uuid}`, {
+                method: 'GET'
+            });
+
+            const incomingFriendRequestsArray = await response.json();
+            return incomingFriendRequestsArray;
+        }
+        catch (err) {
+            console.log(err);
+            throw err;
+        }
+    }
+    else {
+        throw new Error('No UUID found in cookies!');
     }
 }
 
 // Wait until all content is loaded to select elements
 document.addEventListener("DOMContentLoaded", function () {
+    console.log(getIncomingFriendRequests());
     const inputElement = document.getElementById("chat-input");
     const inputFindFriends = document.getElementById("find-friends-input");
 

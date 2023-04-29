@@ -41,23 +41,24 @@ app.post('/register', async (req, res) => {
             email: req.body.email,
             password: req.body.password
         });
-        console.log("Atempting to register user...")
+
         // Register in database
         let registerAttempt = await userController.registerUser(userCredentials.email, userCredentials.password);
 
         // If the register attempt fails (user already has an account)
-        if (registerAttempt[0] === false) {
-            console.log(registerAttempt[1]);
-            res.statusMessage = registerAttempt[1];
+        if (registerAttempt.success === false) {
+            console.log(registerAttempt.message);
+            res.statusMessage = registerAttempt.message;
             res.status(400).end();
             return;
         }
 
         // Generate session token for new user
-        const sessionToken = await userController.generateSessionToken(userCredentials.email);
+        const sessionToken = await userController.generateSessionToken(registerAttempt.uuid);
         console.log(`${userCredentials.email} has successfully registered, generated a new sessionToken: ${sessionToken}`);
 
         res.cookie('session', sessionToken);
+        res.cookie('uuid', registerAttempt.uuid);
         res.send(res.redirect('/chatroom'));
     }
     catch (err) {
@@ -74,22 +75,24 @@ app.post('/login', async (req, res) => {
             password: req.body.password
         });
         // Try to login
-        let loginAttempt = userController.loginUser(userCredentials.email, userCredentials.password);
+        let loginAttempt = await userController.loginUser(userCredentials.email, userCredentials.password);
 
         // If the login attempt was successful (matching credentials)
-        if (await loginAttempt === true) {
+        if (loginAttempt.success === true) {
             // Handle sessionToken generation / retrieval
-            const sessionToken = await userController.generateSessionToken(userCredentials.email);
+            const sessionToken = await userController.generateSessionToken(loginAttempt.uuid);
             console.log(`${userCredentials.email} has logged in, sessionToken: ${sessionToken}`);
 
-            // Set session token cookie
+
+            // Set cookies
             res.cookie('session', sessionToken);
+            res.cookie('uuid', loginAttempt.uuid);
             res.send(res.redirect('/chatroom'));
 
         }
         // If the login attempt failed (invalid credentials)
         else {
-            res.statusMessage = await loginAttempt;
+            res.statusMessage = loginAttempt;
             res.status(400).end();
         }
     }
@@ -99,12 +102,48 @@ app.post('/login', async (req, res) => {
 });
 
 // Route handler for adding friends
-app.post('/send-friend-request', async (req, res) => {
+app.post('/friend-requests', async (req, res) => {
     try {
-        let result = await userController.sendFriendRequest(req.body.accountToRequest, req.cookies.session);
-        
+        let result = await userController.sendFriendRequest(req.body.uuid, req.body.accountToRequest, req.cookies.session);
+
+        if (result === true) {
+            res.status(200).end();
+        }
+        else {
+            res.status(400).end();
+        }
     }
     catch (err) {
         console.log("Error adding friend");
+    }
+});
+
+// Returns list of uuids which represent users that have sent a friend request to the requester's uuid {[uuid0, uuid1, uuid2…]}
+app.get('/friend-requests/:uuid', async (req, res) => {
+    try {
+        const uuid = req.params.uuid;
+        const sessionToken = req.cookies.session;
+
+        // Validate session token
+        if (!await userController.isValidSessionToken(sessionToken, uuid)) {
+            console.log(`Invalid session token. Token: ${sessionToken}, uuid: ${uuid}`);
+            res.status(400).end();
+            return;
+        }
+
+        // Get incoming friend requests for uuid
+        const incomingRequests = await userController.getIncomingFriendRequests(uuid);
+
+        // If the user does not have any incoming friend requests
+        if (incomingRequests == false) {
+            res.send([]);
+            res.status(200).end();
+            return;
+        }
+        res.send(incomingRequests);
+        res.status(200).end();
+    }
+    catch (err) {
+        console.log(err);
     }
 });
