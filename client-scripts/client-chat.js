@@ -125,9 +125,59 @@ async function getIncomingFriendRequests() {
     }
 }
 
+function createIncomingRequestElements(incomingFriendRequestsArray) {
+    incomingFriendRequestsArray.map((element) => {
+        createIncomingRequestElement(element);
+    })
+}
+
+function createIncomingRequestElement(incomingFriendRequest) {
+    // Create div container and add class for styling
+    var friendRequestDiv = document.createElement("div");
+    friendRequestDiv.classList.add("incoming-friend-request");
+
+    var defaultText = document.createElement("p");
+    defaultText.classList.add("incoming-friend-request-default-text")
+    defaultText.textContent = "Incoming friend request from: ";
+
+    // Create element to show the user who sent the request
+    var friendRequestName = document.createElement("p");
+    friendRequestName.classList.add("incoming-friend-request-name")
+    friendRequestName.textContent = `${incomingFriendRequest.sender_name}`;
+
+    // Create button element to accept friend request
+    var friendRequestAcceptButton = document.createElement("button");
+    friendRequestAcceptButton.classList.add("incoming-friend-request-button", "incoming-friend-request-button-accept");
+    friendRequestAcceptButton.textContent = "Accept";
+
+    // Create button element to decline friend request
+    var friendRequestDeclineButton = document.createElement("button");
+    friendRequestDeclineButton.classList.add("incoming-friend-request-button", "incoming-friend-request-button-decline");
+    friendRequestDeclineButton.textContent = "Decline";
+
+    // Create a container to put accept and decline buttons in
+    var buttonContainer = document.createElement("div");
+    buttonContainer.classList.add("incoming-friend-request-button-container");
+    buttonContainer.append(friendRequestAcceptButton, friendRequestDeclineButton);
+
+    // Add elements to the friendRequestDiv
+    friendRequestDiv.append(
+        defaultText,
+        friendRequestName,
+        buttonContainer
+        );
+
+    // Get the element with the id "container-incoming-friend-request"
+    var acceptFriendRequestsElement = document.getElementById("container-incoming-friend-requests");
+    // Append the div we created to the element with id "container-incoming-friend-requests"
+    acceptFriendRequestsElement.appendChild(friendRequestDiv);
+}
+
 // Wait until all content is loaded to select elements
 document.addEventListener("DOMContentLoaded", function () {
-    console.log(getIncomingFriendRequests());
+    getIncomingFriendRequests().then(incomingFriendRequestsArray => {
+        createIncomingRequestElements(incomingFriendRequestsArray);
+    });
     const inputElement = document.getElementById("chat-input");
     const inputFindFriends = document.getElementById("find-friends-input");
 

@@ -69,11 +69,12 @@ app.post('/register', async (req, res) => {
 // Route handler for login endpoint
 app.post('/login', async (req, res) => {
     try {
-        console.log("Trying to login with: ", req.body);
         const userCredentials = ({
             email: req.body.email,
             password: req.body.password
         });
+
+        console.log(`${userCredentials.email} is trying to login...`);
         // Try to login
         let loginAttempt = await userController.loginUser(userCredentials.email, userCredentials.password);
 
@@ -107,9 +108,11 @@ app.post('/friend-requests', async (req, res) => {
         let result = await userController.sendFriendRequest(req.body.uuid, req.body.accountToRequest, req.cookies.session);
 
         if (result === true) {
+            // Friend request sent successfully
             res.status(200).end();
         }
         else {
+            // Failed to send friend request
             res.status(400).end();
         }
     }
@@ -124,15 +127,8 @@ app.get('/friend-requests/:uuid', async (req, res) => {
         const uuid = req.params.uuid;
         const sessionToken = req.cookies.session;
 
-        // Validate session token
-        if (!await userController.isValidSessionToken(sessionToken, uuid)) {
-            console.log(`Invalid session token. Token: ${sessionToken}, uuid: ${uuid}`);
-            res.status(400).end();
-            return;
-        }
-
         // Get incoming friend requests for uuid
-        const incomingRequests = await userController.getIncomingFriendRequests(uuid);
+        const incomingRequests = await userController.getIncomingFriendRequests(uuid, sessionToken);
 
         // If the user does not have any incoming friend requests
         if (incomingRequests == false) {
@@ -140,6 +136,8 @@ app.get('/friend-requests/:uuid', async (req, res) => {
             res.status(200).end();
             return;
         }
+
+        // If the user has incoming friend requests
         res.send(incomingRequests);
         res.status(200).end();
     }

@@ -284,12 +284,9 @@ async function isValidSessionToken(tokenID, uuid) {
 // sender_uuid: The uuid of the user who is sending the friend request
 // sessionToken: session token of user who is sending the request
 // userToRequest: the user to send friend request to
-async function sendFriendRequest(sender_uuid, recipient_uuid, sessionToken) {
+async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
     let client, db;
     try {
-        // Get client
-        const { client, db } = await getClientAndDB(sender_uuid);
-
         // Validate session token
         // Since we do not have the email of the request, we will just use the sessionToken for the cachedClients key in the database module
         if (!await isValidSessionToken(sessionToken, sender_uuid)) {
@@ -297,41 +294,53 @@ async function sendFriendRequest(sender_uuid, recipient_uuid, sessionToken) {
             return false;
         }
 
+        // Get client
+        const { client, db } = await getClientAndDB(sender_uuid);
+
         // Try to find the userToRequest
         // Grab users collection
         const usersCollection = await db.collection('users');
-        // Query users collection for userToRequest (the email)
-        const result = await usersCollection.findOne({ email: recipient_uuid });
+        // Query users collection for userToRequest
+        const result = await usersCollection.findOne({ email: recipient_name });
 
         // If we cannot find the userToRequest, return false
         if (!result) {
-            console.log(`${recipient_uuid} could not be found...`);
+            console.log(`${recipient_name} could not be found...`);
             return false;
         }
 
         // If a user tries to send a friend request to themself, return false
-        if(result.uuid == sender_uuid) {
-            console.log(`${recipient_uuid} tried to send themself a friend request`);
+        if (result.uuid == sender_uuid) {
+            console.log(`${recipient_name} tried to send themself a friend request`);
             return false;
-        } 
+        }
 
         // If the user to request already has a friend request from us, dont send another one and return false
         try {
-            if (result.incomingFriendRequests.includes(sender_uuid)) {
-                console.log(`${recipient_uuid} already has a friend request from ${sender_uuid}`);
-                return false;
+            for (var i = 0; i < result.incomingFriendRequests.length; i++) {
+                var incomingFriendRequest = result.incomingFriendRequests[i];
+                if (incomingFriendRequest.sender_uuid == sender_uuid) {
+                    console.log(`${recipient_name} already has a friend request from ${sender_uuid}`);
+                    return false;
+                }
             }
         }
         // If incomingFriendRequests is undefined, don't log the error (this error will occur when someone receieves their first friend request)
         // This is because the user will not have the 'incomingFriendRequests' array in their document
         catch (err) { }
 
+        // Query for the sender so we can return the name of the account who sent the request instead of just the uuid
+        const sender = await usersCollection.findOne({ uuid: sender_uuid });
+
         // Append the requesters uuid to incomingFriendRequests
         const modifyResult = await usersCollection.updateOne(
-            { email: recipient_uuid },
+            { email: recipient_name },
             {
                 $push: {
-                    incomingFriendRequests: `${sender_uuid}`
+                    incomingFriendRequests: {
+                        sender_uuid: `${sender_uuid}`,
+                        sender_name: `${sender.email}`
+                    }
                 }
             }
         );
@@ -344,24 +353,31 @@ async function sendFriendRequest(sender_uuid, recipient_uuid, sessionToken) {
 
 // Given a uuid, retrieve all of the items of their incomingFriendRequests array
 // uuid: read the incomingFriendRequests array of this uuid
-async function getIncomingFriendRequests(uuid) {
+async function getIncomingFriendRequests(uuid, sessionToken) {
     let client, db;
     try {
+        // Validate session token
+        // Since we do not have the email of the request, we will just use the sessionToken for the cachedClients key in the database module
+        if (!await isValidSessionToken(sessionToken, uuid)) {
+            console.log("Session token is invalid");
+            return false;
+        }
+
         // Get client
         const { client, db } = await getClientAndDB(uuid);
         // Grab users collection
         const usersCollection = await db.collection('users');
         // Query users collection for userToRequest (the email)
         const result = await usersCollection.findOne({ uuid: uuid });
-        
+
         // If the user does not have an incomingFriendRequests array
-        if(result.incomingFriendRequests == undefined) {
+        if (result.incomingFriendRequests == undefined) {
             console.log(`${uuid} does not have an incoming friend requests array`);
             return [];
         }
         return result.incomingFriendRequests;
     }
-    catch(err) {
+    catch (err) {
         console.log(err);
     }
 }
