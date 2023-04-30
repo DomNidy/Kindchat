@@ -248,3 +248,7 @@ body {
     font-size: 16px;
     font-style: italic;
 }
+
+.hide-text {
+    display: none;
+}

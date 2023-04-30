@@ -75,7 +75,7 @@ function onMessageInputChanged(event) {
 }
 
 // Sends a friend request
-function addFriend(event) {
+function sendFriendRequest(event) {
     if (event.key == "Enter") {
         const inputFindFriends = document.getElementById("find-friends-input");
 
@@ -131,6 +131,36 @@ function createIncomingRequestElements(incomingFriendRequestsArray) {
     })
 }
 
+// Sender_uuid is the uuid of the person who sent us a friend request that we wish to accept
+function acceptFriendRequest(sender_uuid, request_element) {
+    // Parse the uuid cookie
+    const uuid = getCurrentUUIDCookie();
+    console.log(sender_uuid);
+
+    if (uuid) {
+        try {
+            fetch(`/friend-requests/accept/${sender_uuid}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    recipient_uuid: uuid,
+                    sender_uuid: sender_uuid
+                })
+            })
+                .then(request_element.remove());
+        }
+        catch (err) {
+            console.log(err);
+            throw err;
+        }
+    }
+    else {
+        throw new Error('No UUID found in cookies!');
+    }
+}
+
 function createIncomingRequestElement(incomingFriendRequest) {
     // Create div container and add class for styling
     var friendRequestDiv = document.createElement("div");
@@ -139,6 +169,11 @@ function createIncomingRequestElement(incomingFriendRequest) {
     var defaultText = document.createElement("p");
     defaultText.classList.add("incoming-friend-request-default-text")
     defaultText.textContent = "Incoming friend request from: ";
+
+    // This is just used to store the uuid of the person who requested in the client side
+    var hiddenUUIDText = document.createElement("p");
+    hiddenUUIDText.classList.add("hide-text");
+    hiddenUUIDText.textContent = incomingFriendRequest.sender_uuid;
 
     // Create element to show the user who sent the request
     var friendRequestName = document.createElement("p");
@@ -149,6 +184,9 @@ function createIncomingRequestElement(incomingFriendRequest) {
     var friendRequestAcceptButton = document.createElement("button");
     friendRequestAcceptButton.classList.add("incoming-friend-request-button", "incoming-friend-request-button-accept");
     friendRequestAcceptButton.textContent = "Accept";
+    friendRequestAcceptButton.addEventListener("click", function () {
+        acceptFriendRequest(hiddenUUIDText.textContent, friendRequestDiv);
+    });
 
     // Create button element to decline friend request
     var friendRequestDeclineButton = document.createElement("button");
@@ -163,9 +201,10 @@ function createIncomingRequestElement(incomingFriendRequest) {
     // Add elements to the friendRequestDiv
     friendRequestDiv.append(
         defaultText,
+        hiddenUUIDText,
         friendRequestName,
         buttonContainer
-        );
+    );
 
     // Get the element with the id "container-incoming-friend-request"
     var acceptFriendRequestsElement = document.getElementById("container-incoming-friend-requests");
@@ -182,5 +221,5 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputFindFriends = document.getElementById("find-friends-input");
 
     inputElement.addEventListener("keydown", onMessageInputChanged);
-    inputFindFriends.addEventListener("keyup", addFriend);
+    inputFindFriends.addEventListener("keyup", sendFriendRequest);
 })

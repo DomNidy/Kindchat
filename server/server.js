@@ -82,11 +82,14 @@ app.post('/login', async (req, res) => {
         if (loginAttempt.success === true) {
             // Handle sessionToken generation / retrieval
             const sessionToken = await userController.generateSessionToken(loginAttempt.uuid);
-            console.log(`${userCredentials.email} has logged in, sessionToken: ${sessionToken}`);
-
+            console.log(`${userCredentials.email} has logged in, sessionToken: ${sessionToken.tokenID}`);
 
             // Set cookies
-            res.cookie('session', sessionToken);
+            res.cookie('sessionToken', sessionToken, {
+                expires: new Date(sessionToken.expires),
+                httpOnly: true
+            });
+
             res.cookie('uuid', loginAttempt.uuid);
             res.send(res.redirect('/chatroom'));
 
@@ -105,7 +108,7 @@ app.post('/login', async (req, res) => {
 // Route handler for adding friends
 app.post('/friend-requests', async (req, res) => {
     try {
-        let result = await userController.sendFriendRequest(req.body.uuid, req.body.accountToRequest, req.cookies.session);
+        let result = await userController.sendFriendRequest(req.body.uuid, req.body.accountToRequest, req.cookies.sessionToken);
 
         if (result === true) {
             // Friend request sent successfully
@@ -125,7 +128,7 @@ app.post('/friend-requests', async (req, res) => {
 app.get('/friend-requests/:uuid', async (req, res) => {
     try {
         const uuid = req.params.uuid;
-        const sessionToken = req.cookies.session;
+        const sessionToken = req.cookies.sessionToken;
 
         // Get incoming friend requests for uuid
         const incomingRequests = await userController.getIncomingFriendRequests(uuid, sessionToken);
@@ -145,3 +148,22 @@ app.get('/friend-requests/:uuid', async (req, res) => {
         console.log(err);
     }
 });
+
+// If the sender_uuid parameter is present in the incomingFriendRequests array of recipient_uuid, remove it from that array.
+// And if recipient_uuid is present in the outgoingFriendRequests array of sender_uuid, remove it from that array.
+// If both conditions are fulfilled the friend request is successful and the users should be added to eachothers friends list
+app.put('/friend-requests/accept/:sender_uuid', async (req, res) => {
+    try {
+        const sender_uuid = req.params.sender_uuid;
+        const recipient_uuid = req.body.recipient_uuid;
+        const sessionToken = req.cookies.sessionToken;
+
+        userController.acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken);
+
+    }
+    catch (err) {
+        console.log(err);
+        throw err;
+    }
+})
+
