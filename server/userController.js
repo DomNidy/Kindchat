@@ -28,7 +28,8 @@ async function registerUser(email, password) {
         const newUser = {
             uuid: randomUUID(),
             email: email,
-            password: hashedPassword
+            password: hashedPassword,
+            displayName: email
         };
 
         // Insert into users collection
@@ -142,7 +143,7 @@ async function generateSessionToken(uuid) {
             console.log("Inserted a session token:", insertResult);
             return {
                 tokenID: tokenID,
-                expires: expires
+                expires: expirationTime
             }
         }
     }
@@ -265,22 +266,25 @@ async function removeExpiredAndDuplicateTokens(tokenArray, uuid) {
 async function isValidSessionToken(token, uuid) {
     let client, db;
     try {
-
         // Get client
         const { client, db } = await getClientAndDB(uuid);
         // Get sessions collection
         const sessionsCollection = await db.collection('sessions');
-
         // Attempt to find the tokenID in the collection
         const tokenResult = await sessionsCollection.findOne({ tokenID: token.tokenID, uuid: uuid });
 
         // If the tokenID & uuid combination does not exist in the database, return false
         if (!tokenResult) {
+            console.log(`${tokenResult.tokenID} with user ${uuid} does not exist`)
             return false;
         }
 
         // If the tokens expiry time is greater than the current time, return true, if not, return false
-        return tokenResult.expires > Date.now();
+        if (tokenResult.expires > Date.now()) {
+            return true;
+        }
+        console.log(`${tokenResult.tokenID} is expired.`)
+        return false;
     }
     catch (err) {
         console.log(err);
@@ -296,10 +300,7 @@ async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
     try {
         // Validate session token
         // Since we do not have the email of the request, we will just use the sessionToken for the cachedClients key in the database module
-        if (!await isValidSessionToken(sessionToken, sender_uuid)) {
-            console.log("Session token is invalid");
-            return false;
-        }
+        if (!await isValidSessionToken(sessionToken, sender_uuid)) { return false; }
 
         // Get client
         const { client, db } = await getClientAndDB(sender_uuid);
@@ -330,6 +331,7 @@ async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
         // Checks if the recipient already has sender on their friends list
         try {
             const alreadyFriends = recipient.friends.some(element => element.uuid === sender_uuid);
+            console.log(alreadyFriends);
             console.log(`${sender.email} is already friends with ${recipient.email} , a friend request will not be sent.`)
             return false;
         }
@@ -392,10 +394,7 @@ async function getIncomingFriendRequests(uuid, sessionToken) {
     try {
         // Validate session token
         // Since we do not have the email of the request, we will just use the sessionToken for the cachedClients key in the database module
-        if (!await isValidSessionToken(sessionToken, uuid)) {
-            console.log("Session token is invalid");
-            return false;
-        }
+        if (!await isValidSessionToken(sessionToken, uuid)) { return false; }
 
         // Get client
         const { client, db } = await getClientAndDB(uuid);
@@ -425,10 +424,7 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
     let client, db;
     try {
         // Validates the session token, we use the recipient_uuid here because this is the user sending the request
-        if (!await isValidSessionToken(sessionToken, recipient_uuid)) {
-            console.log("Session token is invalid");
-            return false;
-        }
+        if (!await isValidSessionToken(sessionToken, recipient_uuid)) { return false; }
 
         // Get client
         const { client, db } = await getClientAndDB(recipient_uuid);
@@ -478,6 +474,10 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
     }
 }
 
+// This method is called to remove incoming and outgoing friend requests from a sender and receiver object
+// collection: Should be the users collection which contains the sender and receiver document
+// senderObject: This is the document within the collection which sent the friend request
+// recipientObject: This is the document within the collection which received the friend request
 async function removeIncomingOutgoingFriendRequests(collection, senderObject, recipientObject) {
     try {
         // Remove the senders outgoing request
@@ -523,7 +523,8 @@ async function makeTwoUsersFriends(collection, senderObject, recipientObject) {
                 // Add to friends list
                 $push: {
                     friends: {
-                        uuid: senderObject.uuid
+                        uuid: senderObject.uuid,
+                        displayName: senderObject?.displayName
                     }
                 }
             }
@@ -536,7 +537,8 @@ async function makeTwoUsersFriends(collection, senderObject, recipientObject) {
                 // Add to friends list
                 $push: {
                     friends: {
-                        uuid: recipientObject.uuid
+                        uuid: recipientObject.uuid,
+                        displayName: recipientObject?.displayName
                     }
                 }
             }
@@ -550,4 +552,39 @@ async function makeTwoUsersFriends(collection, senderObject, recipientObject) {
 }
 
 
-module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken, sendFriendRequest, getIncomingFriendRequests, acceptFriendRequest };
+// Given a uuid, retrieve all of the items of their friends array
+// uuid: read the friends array of this uuid
+async function getFriendsList(uuid, sessionToken) {
+    let client, db;
+    try {
+        // Validates session token
+        if (!await isValidSessionToken(sessionToken, uuid)) { return false; }
+
+        const { client, db } = await getClientAndDB(uuid);
+        const usersCollection = await db.collection('users');
+        const user = await usersCollection.findOne({ uuid: uuid });
+
+        // If the user has friends
+        if (user?.friends?.length >= 1) {
+            let friendsListObject = []
+            for (let i = 0; i < user.friends.length; i++) {
+                let friendObject = {
+                    uuid: user.friends[i].uuid,
+                    displayName: user.friends[i].displayName
+                }
+                friendsListObject.push(friendObject);
+            }
+            return friendsListObject;
+        }
+
+        console.log(`${user.email} does not have any friends to retrieve`);
+        return false;
+    }
+    catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
+
+module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken, sendFriendRequest, getIncomingFriendRequests, acceptFriendRequest, getFriendsList };

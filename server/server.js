@@ -57,7 +57,7 @@ app.post('/register', async (req, res) => {
         const sessionToken = await userController.generateSessionToken(registerAttempt.uuid);
         console.log(`${userCredentials.email} has successfully registered, generated a new sessionToken: ${sessionToken}`);
 
-        res.cookie('session', sessionToken);
+        res.cookie('sessionToken', sessionToken);
         res.cookie('uuid', registerAttempt.uuid);
         res.send(res.redirect('/chatroom'));
     }
@@ -149,6 +149,7 @@ app.get('/friend-requests/:uuid', async (req, res) => {
     }
 });
 
+// Accepts a friend request sent from uuid (if one exists)
 // If the sender_uuid parameter is present in the incomingFriendRequests array of recipient_uuid, remove it from that array.
 // And if recipient_uuid is present in the outgoingFriendRequests array of sender_uuid, remove it from that array.
 // If both conditions are fulfilled the friend request is successful and the users should be added to eachothers friends list
@@ -158,12 +159,45 @@ app.put('/friend-requests/accept/:sender_uuid', async (req, res) => {
         const recipient_uuid = req.body.recipient_uuid;
         const sessionToken = req.cookies.sessionToken;
 
-        userController.acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken);
+        const result = await userController.acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken);
 
+        if (!result) {
+            res.status(400).send('Failed to accept friend request');
+            return;
+        }
+        else {
+            res.status(200).send('Friend request accepted successfully');
+        }
     }
     catch (err) {
+        res.status(500).send('An error occurred while accepting the friend request');
         console.log(err);
-        throw err;
     }
-})
+});
 
+// Gets an array of the users friends
+// Th structure of friends should be the following
+//    {
+//        uuid: friend.uuid,
+//        displayName: friend.email
+//    }
+app.get(`/friends`, async (req, res) => {
+    try {
+        const uuid = req.cookies.uuid;
+        const sessionToken = req.cookies.sessionToken;
+
+        const friendsListObject = await userController.getFriendsList(uuid, sessionToken);
+        
+        if(!friendsListObject) {
+            res.status(400).send([]);
+            return;
+        }
+        else {
+            res.status(200).send(friendsListObject);
+        }
+    }
+    catch (err) {
+        res.status(500).send('An error occurred while trying to get the friends list.');
+        console.log(err);
+    }
+});

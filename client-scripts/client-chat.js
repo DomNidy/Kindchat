@@ -24,7 +24,7 @@ function sendMessage(text) {
     // If the last message was sent by another user, create a timestamp and insert it into the chat log
     let lastMessage = messageHistory[messageHistory.length - 1];
     if (lastMessage != client) {
-        createTimestamp();
+        containerChat.appendChild(createTimestamp());
     }
 
     // Append the <p> element to the message-box-sender element
@@ -37,7 +37,6 @@ function sendMessage(text) {
 }
 
 function createTimestamp() {
-    const containerChat = document.querySelector(".container-chat");
     const timestamp = document.createElement("p");
     timestamp.classList.add("timestamp");
 
@@ -61,7 +60,7 @@ function createTimestamp() {
 
     let formattedDate = month + '/' + day + '/' + year + ' ' + hour + ':' + minute + ' ' + amPm;
     timestamp.textContent = formattedDate;
-    containerChat.appendChild(timestamp);
+    return timestamp;
 }
 
 function onMessageInputChanged(event) {
@@ -100,6 +99,34 @@ function sendFriendRequest(event) {
     }
 }
 
+// Sender_uuid is the uuid of the person who sent us a friend request that we wish to accept
+function acceptFriendRequest(sender_uuid, request_element) {
+    // Parse the uuid cookie
+    const uuid = getCurrentUUIDCookie();
+
+    if (uuid) {
+        try {
+            fetch(`/friend-requests/accept/${sender_uuid}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    recipient_uuid: uuid,
+                    sender_uuid: sender_uuid
+                })
+            })
+                .then(request_element.remove());
+        }
+        catch (err) {
+            console.log(err);
+            throw err;
+        }
+    }
+    else {
+        throw new Error('No UUID found in cookies!');
+    }
+}
 
 
 // Gets the incoming friend requests from the api
@@ -125,40 +152,66 @@ async function getIncomingFriendRequests() {
     }
 }
 
+// Gets the users friends from the api
+async function getFriendsList() {
+    const uuid = getCurrentUUIDCookie();
+
+    if (uuid) {
+        try {
+            const response = await fetch(`friends`, {
+                method: 'GET'
+            });
+
+            const friendsListArray = await response.json();
+            return friendsListArray;
+        }
+        catch (err) {
+            console.log(err);
+        }
+    }
+}
+
+function createFriendElements(friendListObject) {
+    friendListObject.map((friendObject) => {
+        createFriendElement(friendObject);
+    })
+}
+
+function createFriendElement(friendObject) {
+    // Create div which contains the rest of the element
+    var friendDiv = document.createElement("div");
+    friendDiv.classList.add("open-chat-box");
+    
+    // Element to show display name of friend
+    var friendName = document.createElement("p");
+    friendName.classList.add("chatter-name");
+    friendName.textContent = friendObject.displayName == undefined ? "Error getting name..." : friendObject.displayName;
+    
+    // Shows the last message between you and this friend
+    var lastMessage = document.createElement("p");
+    lastMessage.classList.add("chat-last-message");
+    lastMessage.textContent = "Last message here...";
+
+    // Shows timestamp of the last message between you and this friend
+    var lastMessageTimestamp = document.createElement("p");
+    lastMessageTimestamp.classList.add("chat-last-message-time");
+    lastMessageTimestamp.textContent = createTimestamp().textContent;
+
+    // Append all intended children to friendDiv
+    friendDiv.append(
+        friendName,
+        lastMessage,
+        lastMessageTimestamp
+        );
+
+    var containerToAppendTo = document.getElementById("container-open-chat-box");
+    containerToAppendTo.appendChild(friendDiv);
+}
+
 function createIncomingRequestElements(incomingFriendRequestsArray) {
     incomingFriendRequestsArray.map((element) => {
         createIncomingRequestElement(element);
     })
-}
-
-// Sender_uuid is the uuid of the person who sent us a friend request that we wish to accept
-function acceptFriendRequest(sender_uuid, request_element) {
-    // Parse the uuid cookie
-    const uuid = getCurrentUUIDCookie();
-    console.log(sender_uuid);
-
-    if (uuid) {
-        try {
-            fetch(`/friend-requests/accept/${sender_uuid}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    recipient_uuid: uuid,
-                    sender_uuid: sender_uuid
-                })
-            })
-                .then(request_element.remove());
-        }
-        catch (err) {
-            console.log(err);
-            throw err;
-        }
-    }
-    else {
-        throw new Error('No UUID found in cookies!');
-    }
 }
 
 function createIncomingRequestElement(incomingFriendRequest) {
@@ -217,6 +270,12 @@ document.addEventListener("DOMContentLoaded", function () {
     getIncomingFriendRequests().then(incomingFriendRequestsArray => {
         createIncomingRequestElements(incomingFriendRequestsArray);
     });
+
+    
+    getFriendsList().then(friendsListArray => {
+        createFriendElements(friendsListArray);
+    });
+
     const inputElement = document.getElementById("chat-input");
     const inputFindFriends = document.getElementById("find-friends-input");
 
