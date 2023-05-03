@@ -128,6 +128,34 @@ function acceptFriendRequest(sender_uuid, request_element) {
     }
 }
 
+function declineFriendRequest(sender_uuid, request_element) {
+    // Parse the uuid cookie
+    const uuid = getCurrentUUIDCookie();
+    
+    if (uuid) {
+        try {
+            fetch(`/friend-requests/decline/${sender_uuid}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    recipient_uuid: uuid,
+                    sender_uuid: sender_uuid
+                })
+            })
+                .then(request_element.remove());
+        }
+        catch (err) {
+            console.log(err);
+            throw err;
+        }
+    }
+    else {
+        throw new Error('No UUID found in cookies!');
+    }
+}
+
 
 // Gets the incoming friend requests from the api
 async function getIncomingFriendRequests() {
@@ -181,12 +209,12 @@ function createFriendElement(friendObject) {
     // Create div which contains the rest of the element
     var friendDiv = document.createElement("div");
     friendDiv.classList.add("open-chat-box");
-    
+
     // Element to show display name of friend
     var friendName = document.createElement("p");
     friendName.classList.add("chatter-name");
     friendName.textContent = friendObject.displayName == undefined ? "Error getting name..." : friendObject.displayName;
-    
+
     // Shows the last message between you and this friend
     var lastMessage = document.createElement("p");
     lastMessage.classList.add("chat-last-message");
@@ -202,7 +230,7 @@ function createFriendElement(friendObject) {
         friendName,
         lastMessage,
         lastMessageTimestamp
-        );
+    );
 
     var containerToAppendTo = document.getElementById("container-open-chat-box");
     containerToAppendTo.appendChild(friendDiv);
@@ -245,6 +273,9 @@ function createIncomingRequestElement(incomingFriendRequest) {
     var friendRequestDeclineButton = document.createElement("button");
     friendRequestDeclineButton.classList.add("incoming-friend-request-button", "incoming-friend-request-button-decline");
     friendRequestDeclineButton.textContent = "Decline";
+    friendRequestDeclineButton.addEventListener("click", function () {
+        declineFriendRequest(hiddenUUIDText.textContent, friendRequestDiv);
+    })
 
     // Create a container to put accept and decline buttons in
     var buttonContainer = document.createElement("div");
@@ -271,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
         createIncomingRequestElements(incomingFriendRequestsArray);
     });
 
-    
+
     getFriendsList().then(friendsListArray => {
         createFriendElements(friendsListArray);
     });

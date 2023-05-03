@@ -175,6 +175,21 @@ app.put('/friend-requests/accept/:sender_uuid', async (req, res) => {
     }
 });
 
+// If the user has a friend request incoming from the sender_uuid, decline it
+app.put('/friend-requests/decline/:sender_uuid', async (req, res) => {
+    try {
+        console.log('tryin');
+        const sender_uuid = req.params.sender_uuid;
+        const recipient_uuid = req.body.recipient_uuid;
+        const sessionToken = req.cookies.sessionToken;
+
+        const result = await userController.declineFriendRequest(recipient_uuid, sender_uuid, sessionToken);
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+
 // Gets an array of the users friends
 // Th structure of friends should be the following
 //    {
@@ -187,10 +202,9 @@ app.get(`/friends`, async (req, res) => {
         const sessionToken = req.cookies.sessionToken;
 
         const friendsListObject = await userController.getFriendsList(uuid, sessionToken);
-        
-        if(!friendsListObject) {
-            res.status(400).send([]);
-            return;
+
+        if (!friendsListObject) {
+            res.status(404).send([]);
         }
         else {
             res.status(200).send(friendsListObject);

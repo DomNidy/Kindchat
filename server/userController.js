@@ -331,9 +331,10 @@ async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
         // Checks if the recipient already has sender on their friends list
         try {
             const alreadyFriends = recipient.friends.some(element => element.uuid === sender_uuid);
-            console.log(alreadyFriends);
-            console.log(`${sender.email} is already friends with ${recipient.email} , a friend request will not be sent.`)
-            return false;
+            if (alreadyFriends) {
+                console.log(`${sender.email} is already friends with ${recipient.email} , a friend request will not be sent.`)
+                return false;
+            }
         }
         catch (err) {
             console.log(`${recipient.email} does not have any friends so we will not check their friends list for duplicate friends`);
@@ -474,6 +475,32 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
     }
 }
 
+// recipient_uuid: The uuid of the user who received a friend request
+// sender_uuid: The uuid of the person who sent a friend request to the recipient
+// If the recipient has a request from the sender in their incomingFriendRequests array, delete that request
+// Ifd the sender has an outgoing request to the recipient in their outgoingFriendRequests array, delete that request
+async function declineFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
+    try {
+        if (!await isValidSessionToken(sessionToken, recipient_uuid)) { return false; }
+
+        // Get client
+        const { client, db } = await getClientAndDB(recipient_uuid);
+        // Grab users collection
+        const usersCollection = await db.collection('users');
+
+        // Grab the recipient & sender user data
+        const recipient = await usersCollection.findOne({ uuid: recipient_uuid });
+        const sender = await usersCollection.findOne({ uuid: sender_uuid });
+
+        const removeResult = await removeIncomingOutgoingFriendRequests(usersCollection, sender, recipient);
+        return removeResult;
+    }
+    catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
 // This method is called to remove incoming and outgoing friend requests from a sender and receiver object
 // collection: Should be the users collection which contains the sender and receiver document
 // senderObject: This is the document within the collection which sent the friend request
@@ -587,4 +614,14 @@ async function getFriendsList(uuid, sessionToken) {
 }
 
 
-module.exports = { registerUser, loginUser, generateSessionToken, isValidSessionToken, sendFriendRequest, getIncomingFriendRequests, acceptFriendRequest, getFriendsList };
+module.exports = {
+    registerUser,
+    loginUser,
+    generateSessionToken,
+    isValidSessionToken,
+    sendFriendRequest,
+    getIncomingFriendRequests,
+    acceptFriendRequest,
+    declineFriendRequest,
+    getFriendsList
+};
