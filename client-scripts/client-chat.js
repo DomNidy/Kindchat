@@ -186,7 +186,7 @@ async function getFriendsList() {
 
     if (uuid) {
         try {
-            const response = await fetch(`friends`, {
+            const response = await fetch(`/friends`, {
                 method: 'GET'
             });
 
@@ -199,6 +199,21 @@ async function getFriendsList() {
     }
 }
 
+// If we do not have access to a 1:1 chat room with the participant_uuid, we will create one instead
+// participant_uuid: The uuid of the person we tried to open a chat with
+async function openChat(participant_uuid) {
+    const uuid = getCurrentUUIDCookie();
+
+    if(uuid) {
+        try {
+            const response = await fetch()
+        }
+        catch(err) {
+            console.log(err);
+        }
+    }
+}
+ 
 function createFriendElements(friendListObject) {
     friendListObject.map((friendObject) => {
         createFriendElement(friendObject);
@@ -209,6 +224,9 @@ function createFriendElement(friendObject) {
     // Create div which contains the rest of the element
     var friendDiv = document.createElement("div");
     friendDiv.classList.add("open-chat-box");
+    friendDiv.addEventListener("click", () => {
+        console.log(hiddenUUIDText.textContent);
+    });
 
     // Element to show display name of friend
     var friendName = document.createElement("p");
@@ -225,11 +243,17 @@ function createFriendElement(friendObject) {
     lastMessageTimestamp.classList.add("chat-last-message-time");
     lastMessageTimestamp.textContent = createTimestamp().textContent;
 
+    // This is just used to store the uuid of the friend in the client
+    var hiddenUUIDText = document.createElement("p");
+    hiddenUUIDText.classList.add("hide-text");
+    hiddenUUIDText.textContent = friendObject.uuid;
+
     // Append all intended children to friendDiv
     friendDiv.append(
         friendName,
         lastMessage,
-        lastMessageTimestamp
+        lastMessageTimestamp,
+        hiddenUUIDText
     );
 
     var containerToAppendTo = document.getElementById("container-open-chat-box");
@@ -294,6 +318,17 @@ function createIncomingRequestElement(incomingFriendRequest) {
     var acceptFriendRequestsElement = document.getElementById("container-incoming-friend-requests");
     // Append the div we created to the element with id "container-incoming-friend-requests"
     acceptFriendRequestsElement.appendChild(friendRequestDiv);
+}
+
+// Get a chatHistory object which contains all message data sent & received between two users
+// chatId: the chat which we should retrieve message history from 
+function getChatHistory(chatId) {
+
+}
+
+// Construct the chat object given the a chatHistory object
+function createChat(chatHistory) {
+    
 }
 
 // Wait until all content is loaded to select elements

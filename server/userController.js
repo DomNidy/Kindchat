@@ -1,9 +1,10 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
+const utility = require('./utility');
 const { getClientAndDB, dbName } = require('./database.js')
-const { randomUUID } = require('crypto');
+const { randomUUID, randomBytes } = require('crypto');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = process.env.MONGO_URI;
+
 
 async function registerUser(email, password) {
     let client, db;
@@ -266,10 +267,21 @@ async function removeExpiredAndDuplicateTokens(tokenArray, uuid) {
 async function isValidSessionToken(token, uuid) {
     let client, db;
     try {
+
+        if (!token) {
+            console.log('Token is undefined');
+            return false;
+        }
+        if (!uuid) {
+            console.log('uuid is undefined');
+            return false;
+        }
+
         // Get client
         const { client, db } = await getClientAndDB(uuid);
         // Get sessions collection
         const sessionsCollection = await db.collection('sessions');
+
         // Attempt to find the tokenID in the collection
         const tokenResult = await sessionsCollection.findOne({ tokenID: token.tokenID, uuid: uuid });
 
@@ -613,6 +625,52 @@ async function getFriendsList(uuid, sessionToken) {
     }
 }
 
+// Creates a chat room
+// creator_uuid: Represents the user who created the chat room (in 1:1 conversations this is typically the person who sends the first msg)
+// participant_uuid: Represents the user the creator intially tried to message, both of these users will be authorized to send messages in the chat when the room is created
+async function createChatRoom(creator_uuid, participant_uuid, sessionToken) {
+    let client, db;
+    try {
+        // Validate token
+        if (!isValidSessionToken(sessionToken, creator_uuid)) { return false; }
+
+        // Get a connected client
+        const { client, db } = await getClientAndDB(creator_uuid);
+        const chatCollection = await db.collection('chats');
+        
+        // Generate ucid
+        const ucid = await utility.generateUCID(db);
+
+        // Create chat room object
+        const chatRoom = {
+            // ucid: unique chat id (identifier for chat rooms)
+            ucid: ucid,
+            // authorized_users: (contains uuids of users that are allowed to access this room)
+            authorized_users: [
+                creator_uuid,
+                participant_uuid
+            ],
+            // Array of chatter objects (people who are able to send messages in the chat room)
+            chat_history: {
+
+            }
+        };
+
+        // Attempt to insert new chat room object
+        const result = await chatCollection.insertOne(chatRoom);
+
+        if (result) {
+            console.log(`Successfully created a new chat room with ucid ${ucid}`);
+            return true;
+        }
+        console.log(`Could not create new chat room, ${result}`);
+        return false;
+    }
+    catch (err) {
+        console.log(err);
+        return false;
+    }
+}
 
 module.exports = {
     registerUser,
@@ -623,5 +681,6 @@ module.exports = {
     getIncomingFriendRequests,
     acceptFriendRequest,
     declineFriendRequest,
-    getFriendsList
+    getFriendsList,
+    createChatRoom
 };

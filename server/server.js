@@ -191,7 +191,7 @@ app.put('/friend-requests/decline/:sender_uuid', async (req, res) => {
 });
 
 // Gets an array of the users friends
-// Th structure of friends should be the following
+// The structure of friends is the following
 //    {
 //        uuid: friend.uuid,
 //        displayName: friend.email
@@ -215,3 +215,20 @@ app.get(`/friends`, async (req, res) => {
         console.log(err);
     }
 });
+
+// Creates a new 1:1 'chat room' between the requesters uuid and the uuid in the param
+app.post(`/chat/create/:participant_uuid`, async (req, res) => {
+    try {
+        const sessionToken = req.cookies.sessionToken;
+        const creator_uuid = req.cookies.uuid;
+        const participant_uuid = req.params.participant_uuid;
+
+        const result = await userController.createChatRoom(creator_uuid, participant_uuid, sessionToken);
+
+        console.log(result);
+    }
+    catch (err) {
+        res.status(500).send('Could not create the chat room.');
+        console.log(err);
+    }
+})
