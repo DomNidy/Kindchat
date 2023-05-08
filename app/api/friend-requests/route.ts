@@ -5,10 +5,6 @@ export async function GET(req: NextRequest) {
   const uuid = req.cookies.get("uuid");
   const sessionToken = req.cookies.get("sessionToken");
 
-  type IncomingRequestsResponse = {
-    requests: Array<string>;
-  };
-
   // Get incoming friend requests for the uuid
   let incomingRequests = await userController.getIncomingFriendRequests(
     uuid.value,
@@ -17,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   // If the user does not have any incoming friend requests
   if (incomingRequests == false) {
-    let res = new NextResponse("No incoming requests", {
+    let res = new NextResponse(JSON.stringify(incomingRequests), {
       status: 200,
     });
 
@@ -25,10 +21,9 @@ export async function GET(req: NextRequest) {
     return res;
   }
 
-  let res = new NextResponse("", {
+  let res = new NextResponse(JSON.stringify(incomingRequests), {
     status: 200,
   });
 
-  res.cookies.set("incomingFriendRequests", JSON.stringify(incomingRequests));
   return res;
 }

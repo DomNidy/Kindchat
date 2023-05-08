@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import IncomingFriendRequest from "./IncomingFriendRequest";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import "../styles/styles.css";
@@ -7,11 +8,7 @@ import "../styles/styles-chatroom.css";
 const logo = require("../logo.png");
 
 export default function Dashboard() {
-  const incomingFriendRequests = {};
-
-  function handleInput(event) {
-    const { id, value } = event.target;
-  }
+  const [incomingFriendRequests, setIncomingFriendRequests] = useState([]);
 
   const sendFriendRequest = async (key) => {
     if (key.code != "Enter") {
@@ -19,9 +16,8 @@ export default function Dashboard() {
     }
     const accountToRequest = key.target.value;
     const uuid = Cookies.get("uuid");
-    
-    if (uuid != undefined & accountToRequest != '') {
-      console.log('sending reuqest');
+
+    if ((uuid != undefined) & (accountToRequest != "")) {
       fetch(`/api/friend-requests/${accountToRequest}`, {
         method: "POST",
         headers: {
@@ -35,6 +31,26 @@ export default function Dashboard() {
       });
     }
   };
+
+  const loadIncomingFriendRequests = () => {
+    const uuid = Cookies.get("uuid");
+    if (uuid != undefined) {
+      fetch(`/api/friend-requests`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((response) => {
+        response.json().then((responseJson) => {
+          setIncomingFriendRequests(responseJson);
+        });
+      });
+    }
+
+    return undefined;
+  };
+
+  useEffect(loadIncomingFriendRequests, []);
 
   return (
     <>
@@ -53,7 +69,15 @@ export default function Dashboard() {
             onKeyUp={sendFriendRequest}
           />
 
-          <div id="container-incoming-friend-requests"></div>
+          <div id="container-incoming-friend-requests">
+            {incomingFriendRequests.map((friendRequest, i) => (
+              <IncomingFriendRequest
+                key={i}
+                sender_name={friendRequest.sender_name}
+                sender_uuid={friendRequest.sender_uuid}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="container-side-bar-bottom">
