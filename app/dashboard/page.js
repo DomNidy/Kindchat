@@ -1,14 +1,41 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import Image from "next/image";
 import "../styles/styles.css";
 import "../styles/styles-chatroom.css";
 const logo = require("../logo.png");
 
 export default function Dashboard() {
-  // Parse uuid cookie
-  console.log(Cookies.get('uuid'));
+  const incomingFriendRequests = {};
+
+  function handleInput(event) {
+    const { id, value } = event.target;
+  }
+
+  const sendFriendRequest = async (key) => {
+    if (key.code != "Enter") {
+      return;
+    }
+    const accountToRequest = key.target.value;
+    const uuid = Cookies.get("uuid");
+    
+    if (uuid != undefined & accountToRequest != '') {
+      console.log('sending reuqest');
+      fetch(`/api/friend-requests/${accountToRequest}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uuid: uuid,
+        }),
+      }).then((response) => {
+        console.log(response);
+      });
+    }
+  };
+
   return (
     <>
       <div className="container-side-bar">
@@ -23,6 +50,7 @@ export default function Dashboard() {
             id="find-friends-input"
             type="text"
             placeholder="Find friends..."
+            onKeyUp={sendFriendRequest}
           />
 
           <div id="container-incoming-friend-requests"></div>

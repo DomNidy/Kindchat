@@ -289,7 +289,7 @@ async function removeExpiredAndDuplicateTokens(tokenArray, uuid) {
 async function isValidSessionToken(token, uuid) {
     let client, db;
     try {
-
+        console.log('Verifying token:', token)
         if (!token) {
             console.log('Token is undefined');
             return false;
@@ -305,8 +305,8 @@ async function isValidSessionToken(token, uuid) {
         const sessionsCollection = await db.collection('sessions');
 
         // Attempt to find the tokenID in the collection
-        const tokenResult = await sessionsCollection.findOne({ tokenID: token.tokenID, uuid: uuid });
-
+        const tokenResult = await sessionsCollection.findOne({ tokenID: token, uuid: uuid });
+        
         // If the tokenID & uuid combination does not exist in the database, return false
         if (!tokenResult) {
             console.log(`${tokenResult.tokenID} with user ${uuid} does not exist`)
@@ -317,7 +317,7 @@ async function isValidSessionToken(token, uuid) {
         if (tokenResult.expires > Date.now()) {
             return true;
         }
-        console.log(`${tokenResult.tokenID} is expired.`)
+        console.log(`${tokenResult} is expired.`)
         return false;
     }
     catch (err) {
