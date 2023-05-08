@@ -9,6 +9,14 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 async function registerUser(email, password) {
     let client, db;
     try {
+        if (!utility.validateEmailPasswordInput(email, password)) {
+            console.log('Input did not complete all regex tests');
+            return {
+                success: false,
+                message: 'Invalid input format'
+            };
+        }
+
         // Get client
         const { client, db } = await getClientAndDB(email);
 
@@ -55,13 +63,20 @@ async function registerUser(email, password) {
 async function loginUser(email, password) {
     let client;
     try {
+        if (!utility.validateEmailPasswordInput(email, password)) {
+            console.log('Input did not complete all regex tests');
+            return {
+                success: false,
+                message: 'Invalid input format'
+            };
+        }
+
         // Get client
         const { client, db } = await getClientAndDB(email);
-
         // Reference to users collection
         const usersCollection = await db.collection('users');
-
         const user = await usersCollection.findOne({ email: email });
+
 
         // If we find the email within the database
         if (user) {
@@ -72,6 +87,7 @@ async function loginUser(email, password) {
                     }
                     else {
                         resolve(result);
+
                     }
                 });
             });
@@ -84,11 +100,17 @@ async function loginUser(email, password) {
                 }
             }
             else {
-                return `User ${email} has failed to login, wrong pass`;
+                return {
+                    success: false,
+                    message: `Failed to login, wrong password!`
+                };
             }
         }
         else {
-            return `User ${email} does not exist!`;
+            return {
+                success: false,
+                message: `User ${email} does not exist!`
+            };
         }
 
     } finally {
@@ -637,7 +659,7 @@ async function createChatRoom(creator_uuid, participant_uuid, sessionToken) {
         // Get a connected client
         const { client, db } = await getClientAndDB(creator_uuid);
         const chatCollection = await db.collection('chats');
-        
+
         // Generate ucid
         const ucid = await utility.generateUCID(db);
 

@@ -28,9 +28,28 @@ async function generateUCID(dbConnection) {
     return bytes;
 }
 
-
-
+// Returns true if email and password match all regex tests, false if one of them fails
+function validateEmailPasswordInput(email, password) {
+    const testResult = [email, password].reduce((prevVal, currVal) => {
+        if (prevVal)
+            return [
+                ...prevVal,
+                // Test length >1
+                /.{2,}/.test(currVal),
+                // Test if there are no space
+                /^[^\s]+$/.test(currVal)
+            ]
+    }, []);
+    
+    for (let i = 0; i < testResult.length; i++) {
+        if (testResult[i] === false) {
+            return false;
+        }
+    }
+    return true;
+}
 
 module.exports = {
-    generateUCID
+    generateUCID,
+    validateEmailPasswordInput
 };
