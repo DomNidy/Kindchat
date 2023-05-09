@@ -16,28 +16,11 @@ const clientDefault = new MongoClient(uri, {
     }
 });
 
-// If the user has no active client in cachedClients, create a new client, insert it into cachedClients, then return the reference to the client and db
-async function getClientAndDB(emailOrToken) {
-    if (!cachedClients[emailOrToken]) {
-        try {
-            console.log(`Creating new client connection for ${emailOrToken}`);
-            const client = await clientDefault.connect();
-            const db = client.db(dbName);
-            cachedClients[emailOrToken] = { client, db };
-        }
-        catch(err) {
-            console.log(`Could not create new client connection for ${emailOrToken}`);
-            return false;
-        }
-        
-    }
-    return cachedClients[emailOrToken];
-}
 
 
 module.exports = {
-    getClientAndDB,
     dbName,
+    clientDefault
 };
 
 

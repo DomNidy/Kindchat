@@ -1,91 +1,18 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import IncomingFriendRequest from "./IncomingFriendRequest";
 import Cookies from "js-cookie";
-import Image from "next/image";
+
 import "../styles/styles.css";
-import "../styles/styles-chatroom.css";
-const logo = require("../logo.png");
+
+// Importing components
+
+import Sidebar from "./Sidebar";
 
 export default function Dashboard() {
-  const [incomingFriendRequests, setIncomingFriendRequests] = useState([]);
-
-  const sendFriendRequest = async (key) => {
-    if (key.code != "Enter") {
-      return;
-    }
-    const accountToRequest = key.target.value;
-    const uuid = Cookies.get("uuid");
-
-    if ((uuid != undefined) & (accountToRequest != "")) {
-      fetch(`/api/friend-requests/${accountToRequest}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          uuid: uuid,
-        }),
-      }).then((response) => {
-        console.log(response);
-      });
-    }
-  };
-
-  const loadIncomingFriendRequests = () => {
-    const uuid = Cookies.get("uuid");
-    if (uuid != undefined) {
-      fetch(`/api/friend-requests`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((response) => {
-        response.json().then((responseJson) => {
-          setIncomingFriendRequests(responseJson);
-        });
-      });
-    }
-
-    return undefined;
-  };
-
-  useEffect(loadIncomingFriendRequests, []);
-
   return (
     <>
-      <div className="container-side-bar">
-        <div className="logobox">
-          <h1>Wisp</h1>
-          <Image src={logo} alt="logo" />
-        </div>
-
-        <div className="container-open-chat-box" id="container-open-chat-box">
-          <input
-            className="find-friends-input"
-            id="find-friends-input"
-            type="text"
-            placeholder="Find friends..."
-            onKeyUp={sendFriendRequest}
-          />
-
-          <div id="container-incoming-friend-requests">
-            {incomingFriendRequests.map((friendRequest, i) => (
-              <IncomingFriendRequest
-                key={i}
-                sender_name={friendRequest.sender_name}
-                sender_uuid={friendRequest.sender_uuid}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="container-side-bar-bottom">
-          <p id="logged-in-as-text">Logged in as user</p>
-          <button>Log out</button>
-        </div>
-      </div>
-      <div className="container-chat">
+      <Sidebar />
+      <div className="container-chat bg-white">
         <div className="container-user-bar">
           <h3>Conversation with Anne</h3>
         </div>

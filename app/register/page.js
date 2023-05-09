@@ -112,7 +112,7 @@ const Register = () => {
         } else {
           console.log("Error registering user: ", response.statusText);
           setPasswordValidState({
-            passwordErrorText: response.statusText,
+            passwordErrorText: [response.statusText],
             fieldsValid: false,
           });
         }
@@ -170,8 +170,8 @@ const Register = () => {
       </a>
 
       <a>
-        {passwordErrorText.map((error) => {
-          return <p id="password-error">{error}</p>;
+        {passwordErrorText.map((error, i) => {
+          return <p id="password-error" key={i}>{error}</p>;
         })}
       </a>
     </div>
