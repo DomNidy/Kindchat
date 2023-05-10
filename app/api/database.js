@@ -1,27 +1,18 @@
-require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+require("dotenv").config();
+const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = process.env.MONGO_URI;
 const dbName = "ChatAppDb";
 
-// This stores the active clients each user is using
-const cachedClients = {};
-
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const clientDefault = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
-
-
 module.exports = {
-    dbName,
-    clientDefault
+  dbName,
+  clientDefault,
 };
-
-
-

@@ -7,7 +7,13 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 async function registerUser(email, password) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     if (!utility.validateEmailPasswordInput(email, password)) {
@@ -62,7 +68,13 @@ async function registerUser(email, password) {
 
 async function loginUser(email, password) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     if (!utility.validateEmailPasswordInput(email, password)) {
@@ -118,7 +130,13 @@ async function loginUser(email, password) {
 // Generates a session Token and then creates and inserts a sessionToken object on the database
 async function generateSessionToken(uuid) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Get past tokens the user that are still stored in the db
@@ -176,7 +194,14 @@ async function generateSessionToken(uuid) {
 // If the user does, return an array of their past session tokens, this is used so we can cull expired/duplicate tokens
 // If the user does not have any previous tokens, return false
 async function retrieveUserPastSessionTokens(uuid) {
-  const client = await clientDefault.connect();
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Reference to sessions collection
@@ -208,7 +233,13 @@ async function retrieveUserPastSessionTokens(uuid) {
 // Returns true if user needs a new token, returns the active token if false
 async function removeExpiredAndDuplicateTokens(tokenArray, uuid) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Reference to sessions collection
@@ -282,7 +313,13 @@ async function removeExpiredAndDuplicateTokens(tokenArray, uuid) {
 // When the user requests content needing a session token, this function will ensure their session token is valid & has not expired
 async function isValidSessionToken(token, uuid) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     console.log("Verifying token:", token);
@@ -331,7 +368,13 @@ async function isValidSessionToken(token, uuid) {
 // recipient_name: the user to send friend request to (not uuid, this matches the email field currently)
 async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Validate session token
@@ -441,7 +484,13 @@ async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
 // uuid: read the incomingFriendRequests array of this uuid
 async function getIncomingFriendRequests(uuid, sessionToken) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Validate session token
@@ -460,6 +509,7 @@ async function getIncomingFriendRequests(uuid, sessionToken) {
       console.log(`${uuid} does not have an incoming friend requests array`);
       return [];
     }
+
     return result.incomingFriendRequests;
   } catch (err) {
     console.log(err);
@@ -477,7 +527,13 @@ async function getIncomingFriendRequests(uuid, sessionToken) {
 // Add one another to the opposites friends list
 async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Validates the session token, we use the recipient_uuid here because this is the user sending the request
@@ -561,7 +617,13 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
 // Ifd the sender has an outgoing request to the recipient in their outgoingFriendRequests array, delete that request
 async function declineFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
   // Get client
-  const client = await clientDefault.connect();
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     if (!(await isValidSessionToken(sessionToken, recipient_uuid))) {
@@ -681,7 +743,14 @@ async function makeTwoUsersFriends(collection, senderObject, recipientObject) {
 // Given a uuid, retrieve all of the items of their friends array
 // uuid: read the friends array of this uuid
 async function getFriendsList(uuid, sessionToken) {
-  const client = await clientDefault.connect();
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Validates session token
@@ -721,8 +790,14 @@ async function getFriendsList(uuid, sessionToken) {
 // creator_uuid: Represents the user who created the chat room (in 1:1 conversations this is typically the person who sends the first msg)
 // participant_uuid: Represents the user the creator intially tried to message, both of these users will be authorized to send messages in the chat when the room is created
 async function createChatRoom(creator_uuid, participant_uuid, sessionToken) {
-  // Get a connected client
-  const client = await clientDefault.connect();
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
   const db = client.db(dbName);
   try {
     // Validate token

@@ -1,17 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-
+import '../styles/styles-chatroom.css';
 import "../styles/styles.css";
 
-// Importing components
-
-import Sidebar from "./Sidebar";
 
 export default function Dashboard() {
   return (
     <>
-      <Sidebar />
+      
       <div className="container-chat bg-white">
         <div className="container-user-bar">
           <h3>Conversation with Anne</h3>
