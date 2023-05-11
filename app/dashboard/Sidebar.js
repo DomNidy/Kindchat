@@ -1,7 +1,7 @@
 "use client";
 const logo = require("../logo.png");
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import { IoIosArrowDropdown } from "react-icons/io";
 
@@ -22,15 +22,65 @@ function FriendIcon({ name, lastMessage }) {
     </div>
   );
 }
-
 function IncomingFriendRequestIcon({ name }) {
-  <div className="w-2/3 h-16 bg-blue-100 rounded-full shadow-sm">
-    <p>{name}</p>
-  </div>;
+  const friendRequestBoxRef = useRef(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isMouseWithinRange, setIsMouseWithinRange] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      setMousePos({ x: event.clientX, y: event.clientY });
+      setIsMouseWithinRange(
+        Math.abs(event.clientX - mousePos.x) <= 150 &&
+          Math.abs(event.clientY - mousePos.y) <= 150
+      );
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [mousePos.x, mousePos.y]);
+
+  function showFriendRequestBox() {
+    friendRequestBoxRef.current.style.opacity = "1";
+    friendRequestBoxRef.current.style.transform = "scale(1)";
+  }
+
+  function hideFriendRequestBox() {
+    friendRequestBoxRef.current.style.opacity = "0";
+    friendRequestBoxRef.current.style.transform = "scale(0)";
+  }
+
+  return (
+    <div
+      className="group w-2/3 h-16 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer mt-1 mb-1"
+      onMouseEnter={showFriendRequestBox}
+      onMouseLeave={hideFriendRequestBox}
+    >
+      <p>
+        {mousePos.x} {mousePos.y}
+      </p>
+      <div
+        className={`flex flex-row flex-wrap justify-center items-center cursor-default ml-[6.2rem] h-fit p-1 w-fit max-w-xs bg-blue-950 rounded-xl opacity-0 scale-0 transition-all duration-100 ${
+          isMouseWithinRange ? "opacity-100 scale-100" : "opacity-0 sc"
+        }`}
+        ref={friendRequestBoxRef}
+      >
+        <p className="basis-full font-semibold text-gray-100">
+          Friend request from {name}
+        </p>
+
+        <button className="w-1/2 rounded-lg bg-green-400">Accept</button>
+        <button className="w-1/2 rounded-lg bg-red-400">Decline</button>
+      </div>
+    </div>
+  );
 }
 
 function DropdownMenu() {
   const [open, setOpen] = useState(false);
+  const [incomingFriendRequests, setIncomingFriendRequests] = useState([]);
   const [findFriendsFocused, setFindFriendsFocused] = useState(false);
   const [findFriendsText, setFindFriendsText] = useState("");
   const [isSendingRequest, setIsSendingRequest] = useState(false);
@@ -49,49 +99,12 @@ function DropdownMenu() {
   }
 
   function handleFriendRequestInput(e) {
-    console.log(e);
     if (e.key === "Enter") {
       // Send friend request through api
       console.log("sending request to", e.target.value);
       sendFriendRequest(e.target.value);
     }
   }
-
-  return (
-    <div className="group bg-blue-600 w-full flex m-0 justify-center items-center ">
-      {open ? (
-        /* Displayed if dropdown menu is open */
-        <div className="flex flex-col items-center w-full cursor-default">
-          <div className="w-full p-0 m-0" onClick={() => setOpen(!open)}>
-            <IoIosArrowDropdown className="mt-1 w-full p-0 hover:invert cursor-pointer" />
-          </div>
-          <input
-            className="h-7 mt-1 w-full bg-blue-50 rounded-md hover:drop-shadow-md text-center text-sm outline-none"
-            placeholder="Find friends"
-            value={findFriendsText}
-            onKeyUp={(e) => handleFriendRequestInput(e)}
-            onChange={(e) => setFindFriendsText(e.target.value)}
-            onFocus={() => setFindFriendsFocused(!findFriendsFocused)}
-            disabled={isSendingRequest}
-          ></input>
-          <p>Dropdown Content here!</p>
-        </div>
-      ) : (
-        /* Displayed if dropdown menu is closed */
-        <div
-          className="flex w-full m-0 justify-center cursor-pointer"
-          onClick={() => setOpen(!open)}
-        >
-          <IoIosArrowDropdown className="m-1 group-hover:invert" />
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function Sidebar() {
-  const [incomingFriendRequests, setIncomingFriendRequests] = useState([]);
-  const [friendsList, setFriendsList] = useState([]);
 
   const loadIncomingFriendRequests = () => {
     const uuid = Cookies.get("uuid");
@@ -110,6 +123,48 @@ export default function Sidebar() {
     }
   };
 
+  useEffect(loadIncomingFriendRequests, []);
+  console.log(incomingFriendRequests);
+  return (
+    <div className="bg-blue-600 w-full flex m-0 justify-center items-center ">
+      {open ? (
+        /* Displayed if dropdown menu is open */
+        <div className="flex flex-col items-center w-full cursor-default">
+          <div className="w-full p-0 m-0" onClick={() => setOpen(!open)}>
+            <IoIosArrowDropdown className="mt-1 w-full p-0 hover:invert cursor-pointer" />
+          </div>
+          <input
+            className="h-7 mt-1 w-full bg-blue-50 rounded-md hover:drop-shadow-md text-center text-sm outline-none"
+            placeholder="Find friends"
+            value={findFriendsText}
+            onKeyUp={(e) => handleFriendRequestInput(e)}
+            onChange={(e) => setFindFriendsText(e.target.value)}
+            onFocus={() => setFindFriendsFocused(!findFriendsFocused)}
+            disabled={isSendingRequest}
+          ></input>
+          {incomingFriendRequests.map((friendRequest, i) => (
+            <IncomingFriendRequestIcon
+              key={i}
+              name={friendRequest.sender_name}
+            />
+          ))}
+        </div>
+      ) : (
+        /* Displayed if dropdown menu is closed */
+        <div
+          className="flex w-full m-0 justify-center cursor-pointer"
+          onClick={() => setOpen(!open)}
+        >
+          <IoIosArrowDropdown className="m-1 group-hover:invert" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar() {
+  const [friendsList, setFriendsList] = useState([]);
+
   const loadFriendsList = () => {
     const uuid = Cookies.get("uuid");
     const sessionToken = Cookies.get("sessionToken");
@@ -120,12 +175,13 @@ export default function Sidebar() {
           "Content-Type": "application/json",
         },
       }).then(async (response) => {
-        setFriendsList(await response.json());
+        if (response.ok) {
+          setFriendsList(await response.json());
+        }
       });
     }
   };
 
-  useEffect(loadIncomingFriendRequests, []);
   useEffect(loadFriendsList, []);
 
   return (
