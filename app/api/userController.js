@@ -341,6 +341,8 @@ async function isValidSessionToken(token, uuid) {
       uuid: uuid,
     });
 
+   
+
     // If the tokenID & uuid combination does not exist in the database, return false
     if (!tokenResult) {
       console.log(`${tokenResult.tokenID} with user ${uuid} does not exist`);

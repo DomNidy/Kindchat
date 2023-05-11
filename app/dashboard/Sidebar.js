@@ -23,8 +23,39 @@ function FriendIcon({ name, lastMessage }) {
   );
 }
 
+function IncomingFriendRequestIcon({ name }) {
+  <div className="w-2/3 h-16 bg-blue-100 rounded-full shadow-sm">
+    <p>{name}</p>
+  </div>;
+}
+
 function DropdownMenu() {
   const [open, setOpen] = useState(false);
+  const [findFriendsFocused, setFindFriendsFocused] = useState(false);
+  const [findFriendsText, setFindFriendsText] = useState("");
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
+
+  async function sendFriendRequest(nameToSendRequestTo) {
+    // Update so user cant edit the input field while we send the request
+    setIsSendingRequest(true);
+    setFindFriendsText("...");
+
+    await fetch(`/api/friend-requests/${nameToSendRequestTo}`, {
+      method: "POST",
+    });
+
+    setIsSendingRequest(false);
+    setFindFriendsText("");
+  }
+
+  function handleFriendRequestInput(e) {
+    console.log(e);
+    if (e.key === "Enter") {
+      // Send friend request through api
+      console.log("sending request to", e.target.value);
+      sendFriendRequest(e.target.value);
+    }
+  }
 
   return (
     <div className="group bg-blue-600 w-full flex m-0 justify-center items-center ">
@@ -37,6 +68,11 @@ function DropdownMenu() {
           <input
             className="h-7 mt-1 w-full bg-blue-50 rounded-md hover:drop-shadow-md text-center text-sm outline-none"
             placeholder="Find friends"
+            value={findFriendsText}
+            onKeyUp={(e) => handleFriendRequestInput(e)}
+            onChange={(e) => setFindFriendsText(e.target.value)}
+            onFocus={() => setFindFriendsFocused(!findFriendsFocused)}
+            disabled={isSendingRequest}
           ></input>
           <p>Dropdown Content here!</p>
         </div>
@@ -55,10 +91,12 @@ function DropdownMenu() {
 
 export default function Sidebar() {
   const [incomingFriendRequests, setIncomingFriendRequests] = useState([]);
+  const [friendsList, setFriendsList] = useState([]);
 
   const loadIncomingFriendRequests = () => {
     const uuid = Cookies.get("uuid");
-    if (uuid != undefined) {
+    const sessionToken = Cookies.get("sessionToken");
+    if (uuid != undefined && sessionToken != undefined) {
       fetch(`/api/friend-requests`, {
         method: "GET",
         headers: {
@@ -72,29 +110,23 @@ export default function Sidebar() {
     }
   };
 
-  const sendFriendRequest = async (key) => {
-    if (key.code != "Enter") {
-      return;
-    }
-    const accountToRequest = key.target.value;
+  const loadFriendsList = () => {
     const uuid = Cookies.get("uuid");
-
-    if ((uuid != undefined) & (accountToRequest != "")) {
-      fetch(`/api/friend-requests/${accountToRequest}`, {
-        method: "POST",
+    const sessionToken = Cookies.get("sessionToken");
+    if (uuid != undefined && sessionToken != undefined) {
+      fetch(`/api/friends/`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          uuid: uuid,
-        }),
-      }).then((response) => {
-        console.log(response);
+      }).then(async (response) => {
+        setFriendsList(await response.json());
       });
     }
   };
 
   useEffect(loadIncomingFriendRequests, []);
+  useEffect(loadFriendsList, []);
 
   return (
     <div className="fixed top-0 left-0 h-screen w-28 m-0 flex flex-col shadow-lg bg-blue-800">
@@ -103,8 +135,8 @@ export default function Sidebar() {
       </div>
       <DropdownMenu />
       <div className="mt-3 grid grid-cols-1 gap-3 place-content-start place-items-center h-full">
-        {incomingFriendRequests.map((friendRequest, i) => (
-          <FriendIcon key={i} name={friendRequest.sender_name} />
+        {friendsList.map((friend, i) => (
+          <FriendIcon key={i} name={friend.displayName} />
         ))}
       </div>
     </div>

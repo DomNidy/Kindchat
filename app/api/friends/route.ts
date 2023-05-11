@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const friendsList = await userController.getFriendsList(uuid, sessionToken);
 
   if (!friendsList) {
-    return new NextResponse("No friends found", {
+    return new NextResponse(JSON.stringify({}), {
       status: 404,
     });
   }

@@ -5,11 +5,12 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { accountToRequest: string } }
 ) {
-  const { uuid } = await req.json();
+  const uuid = req.cookies.get("uuid");
   const sessionToken = req.cookies.get("sessionToken");
+  
   // Attempt to send the friend request
   let sendFriendRequestResult = await userController.sendFriendRequest(
-    uuid,
+    uuid.value,
     params.accountToRequest,
     sessionToken.value
   );
