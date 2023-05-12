@@ -341,8 +341,6 @@ async function isValidSessionToken(token, uuid) {
       uuid: uuid,
     });
 
-   
-
     // If the tokenID & uuid combination does not exist in the database, return false
     if (!tokenResult) {
       console.log(`${tokenResult.tokenID} with user ${uuid} does not exist`);
@@ -633,7 +631,7 @@ async function declineFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
     }
 
     // Grab users collection
-    const usersCollection = await db.collection("users");
+    const usersCollection = db.collection("users");
 
     // Grab the recipient & sender user data
     const recipient = await usersCollection.findOne({ uuid: recipient_uuid });
@@ -694,10 +692,6 @@ async function removeIncomingOutgoingFriendRequests(
   } catch (err) {
     console.log(err);
     return false;
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }
 
@@ -735,10 +729,6 @@ async function makeTwoUsersFriends(collection, senderObject, recipientObject) {
   } catch (err) {
     console.log(err);
     return false;
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }
 
