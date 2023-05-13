@@ -1,10 +1,9 @@
-import React from 'react';
-import Register from './register/page';
+import React from "react";
+import Register from "./register/page";
 
 const HomePage = () => {
-    return (
-        <Register/>
-    );
-}
+  
+  return <Register />;
+};
 
 export default HomePage;

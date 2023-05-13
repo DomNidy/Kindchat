@@ -23,7 +23,7 @@ function FriendIcon({ name, lastMessage }) {
   );
 }
 
-export default function Sidebar() {
+const Sidebar = React.forwardRef((props, ref) => {
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
 
@@ -50,7 +50,10 @@ export default function Sidebar() {
   useEffect(loadFriendsList, []);
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-32 m-0 flex flex-col shadow-lg bg-gray-800">
+    <div
+      className="fixed top-0 left-0 h-screen w-32 m-0 flex flex-col shadow-lg bg-gray-800"
+      ref={ref}
+    >
       <div className="relative top-0 left-0 h-max m-0 p-0 bg-gray-900">
         <Image
           src={logo}
@@ -71,4 +74,6 @@ export default function Sidebar() {
       </div>
     </div>
   );
-}
+});
+
+export default Sidebar;

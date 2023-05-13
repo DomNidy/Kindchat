@@ -8,8 +8,6 @@ export async function PUT(
   const uuid = req.cookies.get("uuid").value;
   const sessionToken = req.cookies.get("sessionToken").value;
 
-  console.log(uuid, sessionToken);
-
   const result = await userController.acceptFriendRequest(
     uuid,
     params.senderUUID,
