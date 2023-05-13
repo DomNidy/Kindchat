@@ -5,9 +5,24 @@ import DropdownMenu from "./DropdownMenu";
 import React, { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 
-function FriendIcon({ name, lastMessage }) {
+function FriendIcon({ name, lastMessage, uuid }) {
+
+  const removeFriend = async () => {
+    await fetch(`/api/friends/${uuid}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    }).then((response) => {
+      console.log(response);
+    })
+  }
+  
+
+  
   return (
     <div className="group w-20 h-20 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer">
+      
       <div
         className="ml-[6.4rem] mt-[28%]  p-1 max-w-xs bg-gray-900 rounded-xl opacity-0 inline-block overflow-hidden 
       scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-75"
@@ -19,6 +34,10 @@ function FriendIcon({ name, lastMessage }) {
           {lastMessage}
         </p>
       </div>
+      {/* Placeholder remove friend button */}
+      <button className="bg-red-500 rounded-full w-7 h-7 text-sm  hover:bg-red-800" onClick={removeFriend}>
+        X
+      </button>
     </div>
   );
 }
@@ -65,7 +84,7 @@ const Sidebar = () => {
       <DropdownMenu loadFriendsList={loadFriendsList} />
       <div className="mt-3 grid grid-cols-1 gap-3 place-content-start place-items-center h-full">
         {friendsList.map((friend, i) => (
-          <FriendIcon key={i} name={friend.displayName} />
+          <FriendIcon key={i} name={friend.displayName} uuid={friend.uuid} />
         ))}
       </div>
       <div className="bg-gray-900 h-11 flex flex-col justify-center">

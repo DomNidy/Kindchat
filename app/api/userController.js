@@ -1,6 +1,7 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const utility = require("./utility");
+const chatController = require("./chatController");
 const { dbName, clientDefault } = require("./database.js");
 const { randomUUID, randomBytes } = require("crypto");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -593,6 +594,9 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
       console.log(
         `${recipient.email} successfully accepted a friend request from ${sender.email} !`
       );
+      // Create a new chat channel which these users have access to
+      createChannel([sender.uuid, recipient.uuid]);
+
       return true;
     }
     // If removing or adding to friends list fails, return false
@@ -778,10 +782,8 @@ async function getFriendsList(uuid, sessionToken) {
   }
 }
 
-// Creates a chat room
-// creator_uuid: Represents the user who created the chat room (in 1:1 conversations this is typically the person who sends the first msg)
-// participant_uuid: Represents the user the creator intially tried to message, both of these users will be authorized to send messages in the chat when the room is created
-async function createChatRoom(creator_uuid, participant_uuid, sessionToken) {
+// Given a uuid, remove the friend_uuid from the friends array if it is present
+async function removeFriend(uuid, friend_uuid, sessionToken) {
   // Get client
   const client = new MongoClient(process.env.MONGO_URI, {
     serverApi: {
@@ -792,34 +794,74 @@ async function createChatRoom(creator_uuid, participant_uuid, sessionToken) {
   });
   const db = client.db(dbName);
   try {
-    // Validate token
-    if (!isValidSessionToken(sessionToken, creator_uuid)) {
+    // Validates session token
+    if (!(await isValidSessionToken(sessionToken, uuid))) {
       return false;
     }
+    // Get the users collection
+    const usersCollection = db.collection("users");
 
-    const chatCollection = db.collection("chats");
+    [uuid, friend_uuid].map(async (uuid, idx, array) => {
+      await usersCollection.updateOne({ uuid: uuid }, {
+        $pull: {
+          friends: {
+            uuid: array[1-idx]
+          }
+        }
+      });
+    });
+
+  } catch (err) {
+    console.log(err);
+    return false;
+  } finally {
+    if (client) {
+      await client.close();
+    }
+  }
+}
+
+// Creates a channel
+// participant_uuids: People who have access to this channel
+async function createChannel(participant_uuids) {
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+  const db = client.db(dbName);
+  try {
+    const channelCollection = db.collection("channels");
 
     // Generate ucid
     const ucid = await utility.generateUCID(db);
 
     // Create chat room object
-    const chatRoom = {
+    const channel = {
       // ucid: unique chat id (identifier for chat rooms)
       ucid: ucid,
       // authorized_users: (contains uuids of users that are allowed to access this room)
-      authorized_users: [creator_uuid, participant_uuid],
-      // Array of chatter objects (people who are able to send messages in the chat room)
+      authorized_users: [...participant_uuids],
       chat_history: {},
     };
 
     // Attempt to insert new chat room object
-    const result = await chatCollection.insertOne(chatRoom);
 
-    if (result) {
+    const createChannelResult = await channelCollection.insertOne(channel);
+    const grantAccessResult = await chatController.grantChannelAccess(ucid, [
+      ...participant_uuids,
+    ]);
+
+    // Append the UCID to the participants channel access array
+
+    if (createChannelResult & grantAccessResult) {
       console.log(`Successfully created a new chat room with ucid ${ucid}`);
       return true;
     }
-    console.log(`Could not create new chat room, ${result}`);
+
     return false;
   } catch (err) {
     console.log(err);
@@ -841,5 +883,6 @@ module.exports = {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendsList,
-  createChatRoom,
+  createChannel,
+  removeFriend,
 };

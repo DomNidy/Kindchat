@@ -28,7 +28,7 @@ const Chat = () => {
 
   return (
     <div className="flex flex-col w-full h-full max-h-screen">
-      <div className="h-full overflow-y-auto text-2xl text-gray-300 scrollbar-thin scrollbar-thumb-gray-400 ">
+      <div className="h-full overflow-y-auto text-xl text-gray-300 scrollbar-thin scrollbar-thumb-gray-400 ">
         {/* Messages will be displayed in this flex col box*/}
         <div className="flex flex-col m-4 gap-2">
           <div className="bg-gray-600 rounded-xl p-1">
@@ -47,7 +47,23 @@ const Chat = () => {
             consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla
             pariatur?"
           </div>
-          <div className="bg-gray-600 rounded-xl p-1">What lol?</div>
+          <div className="bg-gray-600 rounded-xl p-1">
+            "Sed ut perspiciatis unde omnis iste natus error sit voluptatem
+            accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
+            quae ab illo inventore veritatis et quasi architecto beatae vitae
+            dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit
+            aspernatur aut odit aut fugit, sed quia consequuntur magni dolores
+            eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est,
+            qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit,
+            sed quia non numquam eius modi tempora incidunt ut labore et dolore
+            magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis
+            nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut
+            aliquid ex ea commodi consequatur? Quis autem vel eum iure
+            reprehenderit qui in ea voluptate velit esse quam nihil molestiae
+            consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla
+            pariatur?"
+          </div>
+          <div className="bg-gray-600 rounded-xl p-1">Lol 😂</div>
           <div className="bg-gray-600 rounded-xl p-1">
             "But I must explain to you how all this mistaken idea of denouncing
             pleasure and praising pain was born and I will give you a complete
@@ -98,7 +114,7 @@ const Chat = () => {
       </div>
       <div className="flex flex-1 items-center justify-center m-4">
         <input
-          className="bg-gray-500 text-gray-300 relative h-11 rounded-md w-full outline-none p-2"
+          className="bg-gray-500 text-gray-300 relative h-11 rounded-md w-full outline-none p-2 shadow-xl"
           placeholder="Send a message..."
           onKeyUp={handleChatInput}
         ></input>
