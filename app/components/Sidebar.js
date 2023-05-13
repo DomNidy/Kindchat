@@ -23,7 +23,8 @@ function FriendIcon({ name, lastMessage }) {
   );
 }
 
-const Sidebar = React.forwardRef((props, ref) => {
+const Sidebar = () => {
+  let ref = useRef();
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
 
@@ -51,10 +52,10 @@ const Sidebar = React.forwardRef((props, ref) => {
 
   return (
     <div
-      className="fixed top-0 left-0 h-screen w-32 m-0 flex flex-col shadow-lg bg-gray-800"
+      className="flex flex-col top-0 left-0 h-screen w-44 m-0 shadow-lg bg-gray-800"
       ref={ref}
     >
-      <div className="relative top-0 left-0 h-max m-0 p-0 bg-gray-900">
+      <div className="top-0 left-0 h-max m-0 p-0 bg-gray-900">
         <Image
           src={logo}
           alt="wisp logo"
@@ -74,6 +75,6 @@ const Sidebar = React.forwardRef((props, ref) => {
       </div>
     </div>
   );
-});
+};
 
 export default Sidebar;
