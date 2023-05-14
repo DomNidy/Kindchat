@@ -594,8 +594,28 @@ async function acceptFriendRequest(recipient_uuid, sender_uuid, sessionToken) {
       console.log(
         `${recipient.email} successfully accepted a friend request from ${sender.email} !`
       );
+
       // Create a new chat channel which these users have access to
-      createChannel([sender.uuid, recipient.uuid]);
+      const createChannelResult = await createChannel([
+        sender.uuid,
+        recipient.uuid,
+      ]);
+
+      console.log(createChannelResult);
+      // In the friends object of both users, append the ucid of their DM chats to one another
+      for (let idx = 0; idx < 2; idx++) {
+        const uuid = [sender.uuid, recipient.uuid][idx];
+        const opposite_uuid = [sender.uuid, recipient.uuid][1 - idx];
+        console.log(`uuid: ${uuid} , oppositeuuid: ${opposite_uuid}`);
+        await usersCollection.updateOne(
+          { uuid: uuid, "friends.uuid": opposite_uuid },
+          {
+            $set: {
+              "friends.$.ucid": createChannelResult.ucid,
+            },
+          }
+        );
+      }
 
       return true;
     }
@@ -764,6 +784,7 @@ async function getFriendsList(uuid, sessionToken) {
         let friendObject = {
           uuid: user.friends[i].uuid,
           displayName: user.friends[i].displayName,
+          ucid: user.friends[i].ucid
         };
         friendsListObject.push(friendObject);
       }
@@ -802,15 +823,18 @@ async function removeFriend(uuid, friend_uuid, sessionToken) {
     const usersCollection = db.collection("users");
 
     [uuid, friend_uuid].map(async (uuid, idx, array) => {
-      await usersCollection.updateOne({ uuid: uuid }, {
-        $pull: {
-          friends: {
-            uuid: array[1-idx]
-          }
+      await usersCollection.updateOne(
+        { uuid: uuid },
+        {
+          $pull: {
+            friends: {
+              uuid: array[1 - idx],
+            },
+          },
         }
-      });
+      );
     });
-
+    return true;
   } catch (err) {
     console.log(err);
     return false;
@@ -856,10 +880,12 @@ async function createChannel(participant_uuids) {
     ]);
 
     // Append the UCID to the participants channel access array
-
-    if (createChannelResult & grantAccessResult) {
+    if (createChannelResult.acknowledged & grantAccessResult) {
       console.log(`Successfully created a new chat room with ucid ${ucid}`);
-      return true;
+      return {
+        result: true,
+        ucid: ucid,
+      };
     }
 
     return false;

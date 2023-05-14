@@ -1,4 +1,5 @@
 require("dotenv").config();
+const { isValidSessionToken } = require("./userController");
 const { dbName, clientDefault } = require("./database.js");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -41,8 +42,34 @@ async function grantChannelAccess(ucid, participant_uuids) {
   }
 }
 
-async function sendMessageInChannel(uuid, sessionToken, ucid) {}
+async function sendMessageInChannel(uuid, sessionToken, ucid) {
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+  const db = client.db(dbName);
+  try {
+    if (!(await isValidSessionToken(sessionToken, uuid))) {
+      return false;
+    }
+
+    const channelsCollection = db.collection("channels");
+    const channel = await channelsCollection.findOne({ ucid: ucid });
+  } catch (err) {
+    console.log(err);
+    return false;
+  } finally {
+    if (client) {
+      await client.close();
+    }
+  }
+}
 
 module.exports = {
   grantChannelAccess,
+  sendMessageInChannel,
 };
