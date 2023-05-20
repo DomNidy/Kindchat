@@ -2,12 +2,18 @@
 const logo = require("../logo.png");
 import Image from "next/image";
 import DropdownMenu from "./DropdownMenu";
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import Cookies from "js-cookie";
 
-function FriendIcon({ name, lastMessage, uuid, ucid }) {
+const FriendIcon = (props) => {
   const removeFriend = async () => {
-    await fetch(`/api/friends/${uuid}`, {
+    await fetch(`/api/friends/${props.uuid}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -17,32 +23,20 @@ function FriendIcon({ name, lastMessage, uuid, ucid }) {
     });
   };
 
-  const openChatChannel = async () => {
-    await fetch(`/api/messages/${ucid}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "123",
-      }),
-    });
-  };
-
   return (
     <div
       className="group w-20 h-20 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer"
-      onClick={openChatChannel}
+      onClick={() => props.updateCurrentChat(props.ucid)}
     >
       <div
         className="ml-[6.4rem] mt-[28%]  p-1 max-w-xs bg-gray-900 rounded-xl opacity-0 inline-block overflow-hidden 
       scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-75"
       >
         <p className="text-left font-bold text-gray-100 whitespace-nowrap">
-          {name}
+          {props.name}
         </p>
         <p className="m-0 p-0 text-left text-gray-200 text-sm font-semibold italic whitespace-nowrap">
-          {lastMessage}
+          {props.lastMessage}
         </p>
       </div>
       {/* Placeholder remove friend button */}
@@ -54,10 +48,9 @@ function FriendIcon({ name, lastMessage, uuid, ucid }) {
       </button>
     </div>
   );
-}
+};
 
-const Sidebar = () => {
-  let ref = useRef();
+const Sidebar = (props) => {
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
 
@@ -84,10 +77,7 @@ const Sidebar = () => {
   useEffect(loadFriendsList, []);
 
   return (
-    <div
-      className="flex flex-col top-0 left-0 h-screen w-44 m-0 shadow-lg bg-gray-800"
-      ref={ref}
-    >
+    <div className="flex flex-col top-0 left-0 h-screen w-44 m-0 shadow-lg bg-gray-800">
       <div className="top-0 left-0 h-max m-0 p-0 bg-gray-900">
         <Image
           src={logo}
@@ -103,6 +93,7 @@ const Sidebar = () => {
             name={friend.displayName}
             uuid={friend.uuid}
             ucid={friend.ucid}
+            updateCurrentChat={props.updateCurrentChat}
           />
         ))}
       </div>

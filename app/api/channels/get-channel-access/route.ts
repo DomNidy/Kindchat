@@ -1,24 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import userController from "../../userController";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { accountToRequest: string } }
-) {
+// Returns an array of channel ucids that the user has access to
+export async function GET(req: NextRequest) {
   const uuid = req.cookies.get("uuid");
   const sessionToken = req.cookies.get("sessionToken");
-
   
-  
-  // Attempt to send the friend request
-  let sendFriendRequestResult = await userController.sendFriendRequest(
+  // Attempt to retrieve
+  let getChannelAccessResult = await userController.getChannelAccess(
     uuid.value,
-    params.accountToRequest,
     sessionToken.value
   );
+
   // If friend request was sent successfully
-  if (sendFriendRequestResult === true) {
-    return new NextResponse("Friend request sent successfully", {
+  if (getChannelAccessResult != false) {
+    return new NextResponse(JSON.stringify(getChannelAccessResult), {
       status: 200,
     });
   }

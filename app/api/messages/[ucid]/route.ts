@@ -8,12 +8,18 @@ export async function POST(
   const requestBody = await req.json();
   const uuid = req.cookies.get("uuid").value;
   const sessionToken = req.cookies.get("sessionToken").value;
-  const messageContent = requestBody.message;
+  
+  const message = {
+    sender_uuid: uuid,
+    messageContent: requestBody.messageContent,
+    timestamp: Date.now(),
+  };
 
   const friendsList = await chatController.sendMessageInChannel(
     uuid,
     sessionToken,
-    params.ucid
+    params.ucid,
+    message
   );
 
   if (!friendsList) {

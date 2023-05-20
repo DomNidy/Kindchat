@@ -19,8 +19,8 @@ function generateRandomBytes(length, prefix = null) {
 }
 
 async function generateUCID(dbConnection) {
-    const bytes = await generateRandomBytes(12, "chat_");
-    const collisionCheck = await dbConnection.collection('chats').findOne({ ucid: bytes });
+    const bytes = await generateRandomBytes(12, "channel");
+    const collisionCheck = await dbConnection.collection('channels').findOne({ ucid: bytes });
 
     if (collisionCheck) {
         return await generateUCID(dbConnection);

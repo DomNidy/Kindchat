@@ -784,7 +784,7 @@ async function getFriendsList(uuid, sessionToken) {
         let friendObject = {
           uuid: user.friends[i].uuid,
           displayName: user.friends[i].displayName,
-          ucid: user.friends[i].ucid
+          ucid: user.friends[i].ucid,
         };
         friendsListObject.push(friendObject);
       }
@@ -869,7 +869,7 @@ async function createChannel(participant_uuids) {
       ucid: ucid,
       // authorized_users: (contains uuids of users that are allowed to access this room)
       authorized_users: [...participant_uuids],
-      chat_history: {},
+      chat_history: [],
     };
 
     // Attempt to insert new chat room object
@@ -899,6 +899,41 @@ async function createChannel(participant_uuids) {
   }
 }
 
+// Returns an array of channel ucids that the user has access to
+async function getChannelAccess(uuid, sessionToken) {
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+  const db = client.db(dbName);
+  try {
+    // Validates session token
+    if (!(await isValidSessionToken(sessionToken, uuid))) {
+      return false;
+    }
+    const usersCollection = db.collection("users");
+    const user = await usersCollection.findOne({ uuid: uuid });
+
+    if (user) {
+      console.log("Found user: ", user.channel_access);
+      return user.channel_access;
+    }
+
+    return false;
+  } catch (err) {
+    console.log(err);
+    return false;
+  } finally {
+    if (client) {
+      await client.close();
+    }
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -909,6 +944,7 @@ module.exports = {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendsList,
-  createChannel,
   removeFriend,
+  createChannel,
+  getChannelAccess,
 };

@@ -42,7 +42,7 @@ async function grantChannelAccess(ucid, participant_uuids) {
   }
 }
 
-async function sendMessageInChannel(uuid, sessionToken, ucid) {
+async function sendMessageInChannel(uuid, sessionToken, ucid, message) {
   // Get client
   const client = new MongoClient(process.env.MONGO_URI, {
     serverApi: {
@@ -58,7 +58,28 @@ async function sendMessageInChannel(uuid, sessionToken, ucid) {
     }
 
     const channelsCollection = db.collection("channels");
-    const channel = await channelsCollection.findOne({ ucid: ucid });
+
+    const insertMessageResult = await channelsCollection.updateOne(
+      { ucid: ucid },
+      {
+        $push: {
+          chat_history: {
+            // Push message object here
+            messageContent: message.messageContent,
+            sender_uuid: message.sender_uuid,
+            timestamp: message.timestamp,
+          },
+        },
+      }
+    );
+
+    // If message was sent successfully, return true
+    if (insertMessageResult.acknowledged == true) {
+      return true;
+    }
+    // If message could not be send for any reason, return false
+    // Additional information on the updateOne response can be found in the insertMessageResult object
+    return false;
   } catch (err) {
     console.log(err);
     return false;
