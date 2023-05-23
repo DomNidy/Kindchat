@@ -17,9 +17,9 @@ function generateRandomBytes(length, prefix = null) {
         });
     });
 }
-
+// Generates a unique channel id
 async function generateUCID(dbConnection) {
-    const bytes = await generateRandomBytes(12, "channel");
+    const bytes = await generateRandomBytes(12, "channel-");
     const collisionCheck = await dbConnection.collection('channels').findOne({ ucid: bytes });
 
     if (collisionCheck) {
@@ -27,6 +27,7 @@ async function generateUCID(dbConnection) {
     }
     return bytes;
 }
+
 
 // Returns true if email and password match all regex tests, false if one of them fails
 function validateEmailPasswordInput(email, password) {

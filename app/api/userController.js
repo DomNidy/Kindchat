@@ -934,6 +934,37 @@ async function getChannelAccess(uuid, sessionToken) {
   }
 }
 
+// Returns the display name of user with provided uuid, if the uuid cannot be found, returns false
+async function getDisplayNameFromUUID(uuid) {
+  // Get client
+  const client = new MongoClient(process.env.MONGO_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
+  const db = client.db(dbName);
+  try {
+    const usersCollection = db.collection("users");
+    const user = await usersCollection.findOne({ uuid: uuid });
+
+    if (user) {
+      console.log("Found user: ", user.displayName);
+      return user.displayName;
+    }
+
+    return false;
+  } catch (err) {
+    console.log(err);
+    return false;
+  } finally {
+    if (client) {
+      await client.close();
+    }
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -947,4 +978,5 @@ module.exports = {
   removeFriend,
   createChannel,
   getChannelAccess,
+  getDisplayNameFromUUID,
 };

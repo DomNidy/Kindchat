@@ -25,9 +25,10 @@ io.on("connection", async (socket) => {
     socket.to(ucid).except(socket.id).emit("message-received", {
       event: "received",
       messageContent: messageContent,
-      sender: sender,
+      sender_uuid: sender,
       ucid: ucid,
       fromClient: false,
+      timestamp: Date.now(),
     });
   });
 });

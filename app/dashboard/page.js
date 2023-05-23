@@ -10,8 +10,13 @@ const socket = io("http://localhost:3001");
 export default function Dashboard() {
   // ucid of chat channel that is currently active
   const [currentChat, setCurrentChat] = useState();
+  // Display name of user we are chatting with
+  const [topbarDisplayName, setTopbarDisplayName] =
+    useState("No chat opened...");
   // This is an array used to store messages retrieved from the websocket
-  const [retrievedMessages, setRetrievedMessages] = useState([]);
+  const [sessionMessages, setSessionMessages] = useState([]);
+  // This is an object used to store messages retrieved from the database
+  const [databaseMessages, setDatabaseMessages] = useState({});
   // This is an array of all ucids the user has access to, we should join all of these rooms when they finish loading
   const [channelAccess, setChannelAccess] = useState([]);
 
@@ -46,11 +51,11 @@ export default function Dashboard() {
     socket.on("message-received", (message) => {
       console.log("GOT MSG", message);
       // Handle received message
-      setRetrievedMessages((past) => {
+      setSessionMessages((past) => {
         if (past.length >= 1) {
-          return [...past,  message ];
+          return [...past, message];
         }
-        return [ message ];
+        return [message];
       });
     });
     // Pass an empty array to only call the function once on mount.
@@ -59,25 +64,47 @@ export default function Dashboard() {
   // Whenever we receieve a new message
   useEffect(() => {
     console.log("new msg");
-  }, [retrievedMessages]);
+  }, [sessionMessages]);
 
   // This function is passed as a prop to give the FriendIcon component inside Sidebar access to the state of Dashboard
   const updateCurrentChat = (newUcid) => {
     setCurrentChat(newUcid);
   };
 
+  const updateTopbarDisplayName = (newName) => {
+    setTopbarDisplayName(newName);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <div className="flex-1 bg-blue-500 flex">
         <div className="w-44 flex-none">
-          <Sidebar updateCurrentChat={updateCurrentChat} />
+          <Sidebar
+            updateCurrentChat={updateCurrentChat}
+            updateTopbarDisplayName={updateTopbarDisplayName}
+          />
         </div>
         {/* The rest of the page content after the sidebar*/}
         <div className="flex-1 flex flex-col justify-between">
-          <div className="bg-gray-900 fixed text-gray-400 w-full">Wisp</div>
+          <div className="bg-gray-900 fixed text-gray-400 w-full">
+            Wisp
+            {!currentChat ? (
+              <></>
+            ) : (
+              <div className="bg-gray-800 h-12 font-semibold text-xl text-gray-300 flex items-center">
+                Chatting with {topbarDisplayName}
+              </div>
+            )}
+          </div>
 
           <div className="bg-gray-700 flex-1">
-            <Chat ucid={currentChat} messages={retrievedMessages} setMessages={setRetrievedMessages}/>
+            <Chat
+              ucid={currentChat}
+              sessionMessages={sessionMessages}
+              setSessionMessages={setSessionMessages}
+              databaseMessages={databaseMessages}
+              setDatabaseMessages={setDatabaseMessages}
+            />
           </div>
         </div>
         <div className="bg-gray-800 w-36 flex-none">Left user bar</div>

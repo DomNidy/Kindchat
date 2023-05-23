@@ -8,8 +8,11 @@ import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
+  useCallback,
 } from "react";
 import Cookies from "js-cookie";
+import { io } from "socket.io-client";
+const socket = io("http://localhost:3001");
 
 const FriendIcon = (props) => {
   const removeFriend = async () => {
@@ -26,7 +29,10 @@ const FriendIcon = (props) => {
   return (
     <div
       className="group w-20 h-20 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer"
-      onClick={() => props.updateCurrentChat(props.ucid)}
+      onClick={() => {
+        props.updateCurrentChat(props.ucid);
+        props.updateTopbarDisplayName(props.name);
+      }}
     >
       <div
         className="ml-[6.4rem] mt-[28%]  p-1 max-w-xs bg-gray-900 rounded-xl opacity-0 inline-block overflow-hidden 
@@ -54,7 +60,7 @@ const Sidebar = (props) => {
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
 
-  useEffect(() => setDisplayName(Cookies.get("displayName")));
+  useEffect(() => setDisplayName(Cookies.get("displayName")), []);
 
   const loadFriendsList = () => {
     const uuid = Cookies.get("uuid");
@@ -94,6 +100,7 @@ const Sidebar = (props) => {
             uuid={friend.uuid}
             ucid={friend.ucid}
             updateCurrentChat={props.updateCurrentChat}
+            updateTopbarDisplayName={props.updateTopbarDisplayName}
           />
         ))}
       </div>
