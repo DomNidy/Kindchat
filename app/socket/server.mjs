@@ -14,16 +14,16 @@ const io = new Server(server, {
 io.on("connection", async (socket) => {
   console.log(`Socket connected with socked.id of ${socket.id}`);
 
+  // Join all rooms the user has access to
   socket.on("join-room", async (ucidArray) => {
     await socket.join(ucidArray);
-    //console.log("joined room", ucid, socket.id);
   });
 
   // When a user sends a message
-  socket.on("message", ({ messageContent, sender, ucid }) => {
+  socket.on("message-sent", ({ messageContent, sender, ucid }) => {
     console.log("received msg", { messageContent, sender, ucid });
     socket.to(ucid).except(socket.id).emit("message-received", {
-      event: "received",
+      location: "from socket server",
       messageContent: messageContent,
       sender_uuid: sender,
       ucid: ucid,

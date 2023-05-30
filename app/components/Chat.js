@@ -1,52 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:3001");
-
-// fromClient (bool): if true this means it is a message we sent and this message object came directly from our client,
-// in that case, if the message sender is also our uuid, we SHOULD render it out. This gives the user instant feedback
-const MessageBubble = ({
-  messageContent,
-  sender,
-  displayName,
-  timestamp,
-  fromClient,
-}) => {
-  const uuid = Cookies.get("uuid");
-  const timestampString = new Date(timestamp).toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
-
-  // These conditionals ensure we dont render duplicate sessionMessages from the client
-  // The way our websocket is setup causes the person who sent the message to also receieve a websocket event when their message is delivered to the websocket server
-  // sessionMessages created by the client have a prop 'fromClient' to indicate that a message was not from the server
-  // We do this because otherwise the sender of the message would see the delay between them sending their message and its actual delivery
-  if (
-    (sender == uuid && fromClient) ||
-    sender != uuid ||
-    fromClient === undefined
-  ) {
-    return (
-      <div className="bg-gray-600 rounded-xl p-1">
-        <div className="flex flex-row gap-4">
-          <p className="text-md align-text-top font-semibold">
-            {sender} {displayName}
-          </p>
-          <p className="font-normal text-sm text-gray-400">{timestampString}</p>
-        </div>
-
-        <p className="text-md">{messageContent}</p>
-      </div>
-    );
-  }
-};
+import { MessageBubble } from "./MessageBubble";
 
 const Chat = ({
   ucid,
@@ -54,6 +9,7 @@ const Chat = ({
   setSessionMessages,
   databaseMessages,
   setDatabaseMessages,
+  socket,
 }) => {
   // Object that contains information about chatters within this channel
   // We use this because upon retrieving sessionMessages from the database we only have the uuid of the person who sent a message
@@ -78,18 +34,20 @@ const Chat = ({
             ...past,
             {
               messageContent: event.target.value,
-              sender: uuid,
+              sender_uuid: uuid,
               ucid: ucid,
               fromClient: true,
+              timestamp: Date.now(),
             },
           ];
         }
         return [
           {
             messageContent: event.target.value,
-            sender: uuid,
+            sender_uuid: uuid,
             ucid: ucid,
             fromClient: true,
+            timestamp: Date.now(),
           },
         ];
       });
@@ -117,7 +75,7 @@ const Chat = ({
               return past;
             }
           });
-          socket.emit("message", {
+          socket.emit("message-sent", {
             messageContent: event.target.value,
             sender: uuid,
             ucid: ucid,
@@ -203,44 +161,21 @@ const Chat = ({
         {/* sessionMessages will be displayed in this flex col box*/
         /* Only sessionMessages that were sent from the current ucid will be displayed*/}
         <div className="flex flex-col m-4 gap-2 mt-24">
-          
-
-          {Object.values(databaseMessages).map((message, idx, array) =>
-            message?.ucid === ucid ? (
-              <MessageBubble
-                messageContent={message?.messageContent}
-                sender={chatterInfo[message?.sender_uuid]?.displayName}
-                timestamp={message?.timestamp}
-                fromClient={false}
-                key={idx + sessionMessages.length}
-              />
-            ) : (
-              <React.Fragment
-                key={idx + sessionMessages.length}
-              ></React.Fragment>
-            )
-          )}
-
-          {sessionMessages.length >= 1 ? (
-            sessionMessages.map((message, idx, array) =>
-              message.ucid === ucid &&
-              chatterInfo[message.sender_uuid]?.displayName ? (
+          {Object.values(databaseMessages)
+            .concat(sessionMessages)
+            .map((message, idx, array) =>
+              message?.ucid === ucid ? (
                 <MessageBubble
-                  messageContent={message.messageContent}
-                  sender={chatterInfo[message.sender_uuid].displayName}
-                  timestamp={message.timestamp}
-                  fromClient={message?.fromClient}
+                  messageContent={message?.messageContent}
+                  sender={chatterInfo[message?.sender_uuid]?.displayName}
+                  timestamp={message?.timestamp}
+                  fromClient={false}
                   key={idx}
                 />
               ) : (
                 <React.Fragment key={idx}></React.Fragment>
               )
-            )
-          ) : (
-            <>
-              <p>No message history...</p>
-            </>
-          )}
+            )}
         </div>
       </div>
       <div className="flex flex-1 items-center justify-center m-4">

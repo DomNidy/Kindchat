@@ -11,8 +11,7 @@ import React, {
   useCallback,
 } from "react";
 import Cookies from "js-cookie";
-import { io } from "socket.io-client";
-const socket = io("http://localhost:3001");
+
 
 const FriendIcon = (props) => {
   const removeFriend = async () => {

@@ -3,6 +3,7 @@ import "../styles/styles-chatroom.css";
 import "../styles/styles.css";
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import Cookies from "js-cookie";
 import Chat from "../components/Chat";
 import { io } from "socket.io-client";
 const socket = io("http://localhost:3001");
@@ -51,12 +52,14 @@ export default function Dashboard() {
     socket.on("message-received", (message) => {
       console.log("GOT MSG", message);
       // Handle received message
-      setSessionMessages((past) => {
-        if (past.length >= 1) {
-          return [...past, message];
-        }
-        return [message];
-      });
+      if (message.sender_uuid !== Cookies.get("uuid")) {
+        setSessionMessages((past) => {
+          if (past.length >= 1) {
+            return [...past, message];
+          }
+          return [message];
+        });
+      }
     });
     // Pass an empty array to only call the function once on mount.
   }, []);
@@ -104,6 +107,7 @@ export default function Dashboard() {
               setSessionMessages={setSessionMessages}
               databaseMessages={databaseMessages}
               setDatabaseMessages={setDatabaseMessages}
+              socket={socket}
             />
           </div>
         </div>
