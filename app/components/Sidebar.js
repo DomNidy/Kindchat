@@ -12,7 +12,6 @@ import React, {
 } from "react";
 import Cookies from "js-cookie";
 
-
 const FriendIcon = (props) => {
   const removeFriend = async () => {
     await fetch(`/api/friends/${props.uuid}`, {
@@ -82,7 +81,7 @@ const Sidebar = (props) => {
   useEffect(loadFriendsList, []);
 
   return (
-    <div className="flex flex-col top-0 left-0 h-screen w-44 m-0 shadow-lg bg-gray-800">
+    <div className="flex flex-col h-full w-44 m-0 fixed shadow-lg bg-gray-800">
       <div className="top-0 left-0 h-max m-0 p-0 bg-gray-900">
         <Image
           src={logo}

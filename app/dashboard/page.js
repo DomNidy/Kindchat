@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [databaseMessages, setDatabaseMessages] = useState({});
   // This is an array of all ucids the user has access to, we should join all of these rooms when they finish loading
   const [channelAccess, setChannelAccess] = useState([]);
-
+  const uuid = Cookies.get("uuid");
   // After the component is finished mounting, fetch the channelAccess from the api
   useEffect(() => {
     console.log("Fetching channel access...");
@@ -40,7 +40,7 @@ export default function Dashboard() {
       // Convert the [{ucid: actual_ucid}] format of channelAccess into an array containing only ucids
       let arrayOfUCIDS = channelAccess.map((obj) => obj.ucid);
 
-      socket.emit("join-room", arrayOfUCIDS);
+      socket.emit("join-room", { ucids: arrayOfUCIDS, uuid: uuid });
       console.log(socket);
     }
   }, [channelAccess]);
@@ -79,9 +79,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 bg-blue-500 flex">
-        <div className="w-44 flex-none">
+    <div className="flex flex-col min-h-screen ">
+      <div className=" bg-blue-500 flex">
+        <div className="w-44">
           <Sidebar
             updateCurrentChat={updateCurrentChat}
             updateTopbarDisplayName={updateTopbarDisplayName}
@@ -89,18 +89,18 @@ export default function Dashboard() {
         </div>
         {/* The rest of the page content after the sidebar*/}
         <div className="flex-1 flex flex-col justify-between">
-          <div className="bg-gray-900 fixed text-gray-400 w-full">
+          <div className="bg-gray-900 fixed text-gray-400 w-full ">
             Wisp
             {!currentChat ? (
               <></>
             ) : (
-              <div className="bg-gray-800 h-12 font-semibold text-xl text-gray-300 flex items-center">
+              <div className="bg-gray-800 h-12 font-semibold text-xl text-gray-300 flex items-center fixed w-full">
                 Chatting with {topbarDisplayName}
               </div>
             )}
           </div>
 
-          <div className="bg-gray-700 flex-1">
+          <div className="bg-gray-700 ">
             <Chat
               ucid={currentChat}
               sessionMessages={sessionMessages}

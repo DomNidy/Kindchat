@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Cookies from "js-cookie";
 import { MessageBubble } from "./MessageBubble";
 
@@ -15,6 +15,8 @@ const Chat = ({
   // We use this because upon retrieving sessionMessages from the database we only have the uuid of the person who sent a message
   // Once we fetch data from the uuid of each chatter in this chat room, we store it in this chatterInfo object, the key is the uuid of a particular user
   const [chatterInfo, setChatterInfo] = useState({});
+  // Used to scroll to bottom of chat box when new messages flow in
+  const bottomRef = useRef(null);
   const uuid = Cookies.get("uuid");
 
   const handleChatInput = async (event) => {
@@ -84,6 +86,37 @@ const Chat = ({
       });
     }
   };
+  // Return value of this function is every unique uuuid from the list of retrieved messages
+  async function getDatabaseMessages() {
+    const result = await fetch(`/api/messages/${ucid}/50`, {
+      method: "GET",
+    }).then(async (response) => {
+      // Convert response to json object
+      const responseJson = await response.json();
+
+      // Insert these messages into messages state
+      setDatabaseMessages((past) => {
+        const updatedMessages = { ...past }; // Create a new copy of the state
+
+        responseJson.result.forEach((message) => {
+          // Make sure the message id does not exist inside of sessionMessages, this will cause message duplicates to be rendered
+          if (message.messageId && !updatedMessages[message.messageId]) {
+            updatedMessages[message.messageId] = message;
+          }
+        });
+
+        return updatedMessages; // Return the updated state
+      });
+
+      // Find unique users within the messages retrieved
+      const uuidsArray = responseJson.result.map((msg) => msg.sender_uuid);
+
+      const uniqueUuids = new Set(uuidsArray);
+
+      return [...uniqueUuids];
+    });
+    return result;
+  }
 
   // Retrieve past messages from channel
   useEffect(() => {
@@ -96,70 +129,59 @@ const Chat = ({
     }
 
     console.log(`Retrieving messages for ${ucid}...`);
-    // Return value of this function is every unique uuuid from the list of retrieved messages
-    async function getDatabaseMessages() {
-      const result = await fetch(`/api/messages/${ucid}/50`, {
-        method: "GET",
-      }).then(async (response) => {
-        // Convert response to json object
-        const responseJson = await response.json();
-
-        // Insert these messages into messages state
-        setDatabaseMessages((past) => {
-          const updatedMessages = { ...past }; // Create a new copy of the state
-
-          responseJson.result.forEach((message) => {
-            // Make sure the message id does not exist inside of sessionMessages, this will cause message duplicates to be rendered
-            if (message.messageId && !updatedMessages[message.messageId]) {
-              updatedMessages[message.messageId] = message;
-            }
-          });
-
-          return updatedMessages; // Return the updated state
-        });
-
-        // Find unique users within the messages retrieved
-        const uuidsArray = responseJson.result.map((msg) => msg.sender_uuid);
-
-        const uniqueUuids = new Set(uuidsArray);
-
-        return [...uniqueUuids];
-      });
-      return result;
-    }
 
     // Fetch messages, then fetch user display names, set chatter info with user display names when retrieved
     getDatabaseMessages().then((uniqueUuids) => {
-      uniqueUuids.forEach(async (uuid) => {
-        if (!chatterInfo[uuid]) {
-          try {
-            const response = await fetch(`/api/users`, {
-              method: "GET",
-              headers: {
-                uuid: uuid,
-              },
-            });
-            const userData = await response.json();
+      // by using Promise.all , this creates an array of every promise (fetch request) in this example
+      // that will resolve only after all promises in the array resolve (or if one rejects, it will instantly reject)
+      // after the promise array resolves, we will set chatterInfo state, updating the display names
+      Promise.all(
+        uniqueUuids.map(async (uuid) => {
+          if (!chatterInfo[uuid]) {
+            try {
+              const response = await fetch(`/api/users`, {
+                method: "GET",
+                headers: {
+                  uuid: uuid,
+                },
+              });
+              const userData = await response.json();
 
-            setChatterInfo((past) => {
-              past[uuid] = { displayName: userData.displayName };
-              return past;
-            });
-          } catch (error) {
-            console.log(`Error fetching user data for UUID ${uuid}:`, error);
+              return { uuid, displayName: userData.displayName };
+            } catch (error) {
+              console.log(`Error fetching user data for UUID ${uuid}:`, error);
+            }
           }
-        }
+        })
+      ).then((userInfos) => {
+        setChatterInfo((past) => {
+          const updatedInfo = { ...past };
+          userInfos.forEach((userInfo) => {
+            if (userInfo) {
+              updatedInfo[userInfo.uuid] = {
+                displayName: userInfo.displayName,
+              };
+            }
+          });
+          return updatedInfo;
+        });
       });
     });
 
     console.log("messages: ", sessionMessages);
   }, [ucid]);
 
+  // Whenever a new session message is received, scroll to the bottom of the chat box
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [sessionMessages]);
+
   return (
-    <div className="flex flex-col w-full h-full max-h-screen">
+    <div className="flex flex-col w-full h-screen max-h-screen">
       <div className="h-full overflow-y-auto text-xl text-gray-300 scrollbar-thin scrollbar-thumb-gray-400 ">
         {/* sessionMessages will be displayed in this flex col box*/
         /* Only sessionMessages that were sent from the current ucid will be displayed*/}
+
         <div className="flex flex-col m-4 gap-2 mt-24">
           {Object.values(databaseMessages)
             .concat(sessionMessages)
@@ -176,8 +198,10 @@ const Chat = ({
                 <React.Fragment key={idx}></React.Fragment>
               )
             )}
+          <div ref={bottomRef}></div>
         </div>
       </div>
+
       <div className="flex flex-1 items-center justify-center m-4">
         <input
           className="bg-gray-500 text-gray-300 relative h-11 rounded-md w-full outline-none p-2 shadow-xl"

@@ -15,8 +15,11 @@ io.on("connection", async (socket) => {
   console.log(`Socket connected with socked.id of ${socket.id}`);
 
   // Join all rooms the user has access to
-  socket.on("join-room", async (ucidArray) => {
-    await socket.join(ucidArray);
+  // In addition to joining the ucid's, we will also join a room with the room name being the users uuid,
+  // This is useful when it comes to receiving events such as friend requests
+  socket.on("join-room", async ({ ucids, uuid }) => {
+    console.log([...ucids, uuid]);
+    await socket.join([...ucids, uuid]);
   });
 
   // When a user sends a message
@@ -31,6 +34,10 @@ io.on("connection", async (socket) => {
       timestamp: Date.now(),
     });
   });
+
+  // When a user sends a friend request
+  // TODO: Implement friend related actions in websocket (incoming friend req, friend removed you, etc...)
+  socket.on("incoming-friend-request", {});
 });
 
 server.listen(3001, () => {
