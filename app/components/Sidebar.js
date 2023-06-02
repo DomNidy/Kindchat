@@ -57,7 +57,6 @@ const FriendIcon = (props) => {
 const Sidebar = (props) => {
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
-
   useEffect(() => setDisplayName(Cookies.get("displayName")), []);
 
   const loadFriendsList = () => {
@@ -89,7 +88,7 @@ const Sidebar = (props) => {
           className="drop-shadow-md grayscale hover:cursor-pointer duration-75 hover:grayscale-0"
         />
       </div>
-      <DropdownMenu loadFriendsList={loadFriendsList} />
+      <DropdownMenu loadFriendsList={loadFriendsList} socket={props.socket} />
       <div className="mt-3 grid grid-cols-1 gap-3 place-content-start place-items-center h-full">
         {friendsList.map((friend, i) => (
           <FriendIcon

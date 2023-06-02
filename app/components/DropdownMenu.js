@@ -14,7 +14,7 @@ function IncomingFriendRequestIcon({
   const mainDiv = useRef(null);
 
   async function acceptFriendRequest() {
-    mainDiv.current.className += "hidden"
+    mainDiv.current.className += "hidden";
     fetch(`/api/friend-requests/accept/${uuid}`, {
       method: "PUT",
     }).then(() => {
@@ -24,7 +24,7 @@ function IncomingFriendRequestIcon({
   }
 
   async function declineFriendRequest() {
-    mainDiv.current.className += "hidden"
+    mainDiv.current.className += "hidden";
     fetch(`/api/friend-requests/decline/${uuid}`, {
       method: "PUT",
     }).then(() => {
@@ -61,14 +61,54 @@ export default function DropdownMenu(props) {
   const [findFriendsText, setFindFriendsText] = useState("");
   const [isSendingRequest, setIsSendingRequest] = useState(false);
 
+  // Add listener for friend requests
+  useEffect(() => {
+    props.socket.on(
+      "friend-request-received",
+      ({ sender_uuid, sender_name }) => {
+        console.log("You got a friend request from", sender_uuid);
+
+        // Open dropdown when friend request is received
+        if (!open) {
+          setOpen(!open);
+        }
+
+        // TODO: Render this friend request out, this is received from the websocket server
+        const newReq = {
+          sender_uuid: sender_uuid,
+          sender_name: sender_name,
+        };
+
+        console.log("Received new new request", newReq);
+      }
+    );
+  }, []);
+
+  // Sends a friend request
   async function sendFriendRequest(nameToSendRequestTo) {
     // Update so user cant edit the input field while we send the request
     setIsSendingRequest(true);
     setFindFriendsText("...");
-
-    await fetch(`/api/friend-requests/${nameToSendRequestTo}`, {
-      method: "POST",
+    const uuid = Cookies.get("uuid");
+    const sendFriendRequestResult = await fetch(
+      `/api/friend-requests/${nameToSendRequestTo}`,
+      {
+        method: "POST",
+      }
+    ).then(async (response) => {
+      if (response.ok) {
+        return await response.json();
+      }
+      return false;
     });
+
+    // If we successfully send a friend request, emit the socket
+    if (sendFriendRequestResult) {
+      props.socket.emit("friend-request-sent", {
+        recipient_uuid: sendFriendRequestResult.uuidRequested,
+        sender_uuid: uuid,
+      });
+    }
 
     setIsSendingRequest(false);
     setFindFriendsText("");

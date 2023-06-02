@@ -41,7 +41,6 @@ export default function Dashboard() {
       let arrayOfUCIDS = channelAccess.map((obj) => obj.ucid);
 
       socket.emit("join-room", { ucids: arrayOfUCIDS, uuid: uuid });
-      console.log(socket);
     }
   }, [channelAccess]);
 
@@ -61,13 +60,9 @@ export default function Dashboard() {
         });
       }
     });
+
     // Pass an empty array to only call the function once on mount.
   }, []);
-
-  // Whenever we receieve a new message
-  useEffect(() => {
-    console.log("new msg");
-  }, [sessionMessages]);
 
   // This function is passed as a prop to give the FriendIcon component inside Sidebar access to the state of Dashboard
   const updateCurrentChat = (newUcid) => {
@@ -85,6 +80,7 @@ export default function Dashboard() {
           <Sidebar
             updateCurrentChat={updateCurrentChat}
             updateTopbarDisplayName={updateTopbarDisplayName}
+            socket={socket}
           />
         </div>
         {/* The rest of the page content after the sidebar*/}

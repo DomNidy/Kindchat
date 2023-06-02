@@ -8,8 +8,6 @@ export async function POST(
   const uuid = req.cookies.get("uuid");
   const sessionToken = req.cookies.get("sessionToken");
 
-  
-  
   // Attempt to send the friend request
   let sendFriendRequestResult = await userController.sendFriendRequest(
     uuid.value,
@@ -17,8 +15,8 @@ export async function POST(
     sessionToken.value
   );
   // If friend request was sent successfully
-  if (sendFriendRequestResult === true) {
-    return new NextResponse("Friend request sent successfully", {
+  if (sendFriendRequestResult) {
+    return new NextResponse(JSON.stringify(sendFriendRequestResult), {
       status: 200,
     });
   }

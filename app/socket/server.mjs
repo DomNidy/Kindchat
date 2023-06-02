@@ -2,6 +2,9 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 
+// This url points to our api path, since this socket server is running in nodejs, we need to use specific urls instead of next js dynamic api routing
+const api_url = "http://localhost:3000/api";
+
 const app = express();
 const server = http.createServer(app);
 
@@ -37,7 +40,26 @@ io.on("connection", async (socket) => {
 
   // When a user sends a friend request
   // TODO: Implement friend related actions in websocket (incoming friend req, friend removed you, etc...)
-  socket.on("incoming-friend-request", {});
+  socket.on("friend-request-sent", async ({ recipient_uuid, sender_uuid }) => {
+    try {
+      // Get display name of sender
+      // TODO: THIS sender_name api request returns an empty object ({}) as a response, this causes things to fail when trying to render, figure this out!
+      const sender_name = await fetch(`${api_url}/users`, {
+        method: "GET",
+        headers: {
+          uuid: sender_uuid,
+        },
+      });
+
+      console.log(`${sender_name} sent a request to ${recipient_uuid}`);
+      socket.to(recipient_uuid).emit("friend-request-received", {
+        sender_uuid: sender_uuid,
+        sender_name: sender_name,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  });
 });
 
 server.listen(3001, () => {

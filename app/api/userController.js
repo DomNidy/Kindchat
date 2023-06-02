@@ -471,7 +471,7 @@ async function sendFriendRequest(sender_uuid, recipient_name, sessionToken) {
     console.log(
       `${sender.email} has sent a friend request to ${recipient.email}`
     );
-    return true;
+    return { result: true, uuidRequested: recipient.uuid };
   } catch (err) {
     console.log(err);
   } finally {
