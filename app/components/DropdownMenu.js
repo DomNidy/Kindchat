@@ -13,6 +13,8 @@ function IncomingFriendRequestIcon({
 }) {
   const mainDiv = useRef(null);
 
+  // TODO: Make it so upon accepting a friend request the user instantly has the request icon disappear from their UI and instantly renders in the sidebar by other friends
+  // TODO: We can use conditional rendering & state for this. JUST get it done!!!!
   async function acceptFriendRequest() {
     mainDiv.current.className += "hidden";
     fetch(`/api/friend-requests/accept/${uuid}`, {
@@ -63,6 +65,7 @@ export default function DropdownMenu(props) {
 
   // Add listener for friend requests
   useEffect(() => {
+    // Add listener for when you receive a friend request
     props.socket.on(
       "friend-request-received",
       ({ sender_uuid, sender_name }) => {
@@ -79,6 +82,13 @@ export default function DropdownMenu(props) {
           sender_name: sender_name,
         };
 
+        setIncomingFriendRequests((prev) => {
+          if (prev.length > 0) {
+            return [...prev, newReq];
+          }
+          return [newReq];
+        });
+
         console.log("Received new new request", newReq);
       }
     );
@@ -90,6 +100,7 @@ export default function DropdownMenu(props) {
     setIsSendingRequest(true);
     setFindFriendsText("...");
     const uuid = Cookies.get("uuid");
+
     const sendFriendRequestResult = await fetch(
       `/api/friend-requests/${nameToSendRequestTo}`,
       {

@@ -13,7 +13,17 @@ import React, {
 import Cookies from "js-cookie";
 
 const FriendIcon = (props) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const our_uuid = Cookies.get("uuid");
+
   const removeFriend = async () => {
+    setIsVisible(false);
+    /// Emit socket event
+    props.socket.emit("friend-removed", {
+      remover_uuid: our_uuid,
+      removed_uuid: props.uuid,
+    });
+
     await fetch(`/api/friends/${props.uuid}`, {
       method: "DELETE",
       headers: {
@@ -25,31 +35,35 @@ const FriendIcon = (props) => {
   };
 
   return (
-    <div
-      className="group w-20 h-20 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer"
-      onClick={() => {
-        props.updateCurrentChat(props.ucid);
-        props.updateTopbarDisplayName(props.name);
-      }}
-    >
-      <div
-        className="ml-[6.4rem] mt-[28%]  p-1 max-w-xs bg-gray-900 rounded-xl opacity-0 inline-block overflow-hidden 
+    <div>
+      {isVisible && (
+        <div
+          className="group w-20 h-20 bg-blue-100 rounded-full shadow-sm duration-300 hover:bg-blue-300 cursor-pointer"
+          onClick={() => {
+            props.updateCurrentChat(props.ucid);
+            props.updateTopbarDisplayName(props.name);
+          }}
+        >
+          <div
+            className="ml-[6.4rem] mt-[28%]  p-1 max-w-xs bg-gray-900 rounded-xl opacity-0 inline-block overflow-hidden 
       scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-75"
-      >
-        <p className="text-left font-bold text-gray-100 whitespace-nowrap">
-          {props.name}
-        </p>
-        <p className="m-0 p-0 text-left text-gray-200 text-sm font-semibold italic whitespace-nowrap">
-          {props.lastMessage}
-        </p>
-      </div>
-      {/* Placeholder remove friend button */}
-      <button
-        className="bg-red-500 rounded-full w-7 h-7 text-sm  hover:bg-red-800"
-        onClick={removeFriend}
-      >
-        X
-      </button>
+          >
+            <p className="text-left font-bold text-gray-100 whitespace-nowrap">
+              {props.name}
+            </p>
+            <p className="m-0 p-0 text-left text-gray-200 text-sm font-semibold italic whitespace-nowrap">
+              {props.lastMessage}
+            </p>
+          </div>
+          {/* Placeholder remove friend button */}
+          <button
+            className="bg-red-500 rounded-full w-7 h-7 text-sm  hover:bg-red-800"
+            onClick={removeFriend}
+          >
+            X
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -58,6 +72,21 @@ const Sidebar = (props) => {
   const [friendsList, setFriendsList] = useState([]);
   const [displayName, setDisplayName] = useState("");
   useEffect(() => setDisplayName(Cookies.get("displayName")), []);
+
+  useEffect(() => {
+    // Add event listener for when a friend removes you
+    props.socket.on("friend-removed-you", ({ remover_uuid }) => {
+      console.log(`${remover_uuid} removed you!`);
+      // TODO: Remove the friend that removed you from the friendsList
+      setFriendsList((prev) => {
+        if (prev) {
+          prev.filter((friendObj) => {
+            return friendObj.uuid !== remover_uuid;
+          });
+        }
+      });
+    });
+  }, []);
 
   const loadFriendsList = () => {
     const uuid = Cookies.get("uuid");
@@ -90,16 +119,18 @@ const Sidebar = (props) => {
       </div>
       <DropdownMenu loadFriendsList={loadFriendsList} socket={props.socket} />
       <div className="mt-3 grid grid-cols-1 gap-3 place-content-start place-items-center h-full">
-        {friendsList.map((friend, i) => (
-          <FriendIcon
-            key={i}
-            name={friend.displayName}
-            uuid={friend.uuid}
-            ucid={friend.ucid}
-            updateCurrentChat={props.updateCurrentChat}
-            updateTopbarDisplayName={props.updateTopbarDisplayName}
-          />
-        ))}
+        {friendsList &&
+          friendsList.map((friend, i) => (
+            <FriendIcon
+              key={i}
+              name={friend.displayName}
+              uuid={friend.uuid}
+              ucid={friend.ucid}
+              updateCurrentChat={props.updateCurrentChat}
+              updateTopbarDisplayName={props.updateTopbarDisplayName}
+              socket={props.socket}
+            />
+          ))}
       </div>
       <div className="bg-gray-900 h-11 flex flex-col justify-center">
         <p className="font-semibold text-md text-gray-200 text-ellipsis whitespace-nowrap overflow-hidden">

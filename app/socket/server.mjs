@@ -43,22 +43,31 @@ io.on("connection", async (socket) => {
   socket.on("friend-request-sent", async ({ recipient_uuid, sender_uuid }) => {
     try {
       // Get display name of sender
-      // TODO: THIS sender_name api request returns an empty object ({}) as a response, this causes things to fail when trying to render, figure this out!
       const sender_name = await fetch(`${api_url}/users`, {
         method: "GET",
         headers: {
           uuid: sender_uuid,
         },
-      });
+      }).then(async (response) => await response.json());
 
-      console.log(`${sender_name} sent a request to ${recipient_uuid}`);
+      console.log(
+        `${sender_name.displayName} sent a request to ${recipient_uuid}`
+      );
       socket.to(recipient_uuid).emit("friend-request-received", {
         sender_uuid: sender_uuid,
-        sender_name: sender_name,
+        sender_name: sender_name.displayName,
       });
     } catch (err) {
       console.log(err);
     }
+  });
+
+  // When a user unfriends another user
+  socket.on("friend-removed", ({ remover_uuid, removed_uuid }) => {
+    console.log(`${remover_uuid} removed ${removed_uuid} as a friend!`);
+    socket.to(removed_uuid).emit("friend-removed-you", {
+      remover_uuid: remover_uuid,
+    });
   });
 });
 
