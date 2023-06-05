@@ -65,20 +65,21 @@ const Chat = ({
       }).then(async (response) => {
         // If the api request was successful, emit a websocket event so the other user can immediately view this message
         if (response.ok) {
-          const messageId = await response.json();
+          const messageID = await response.json();
           // We will insert an entry with the message id to make it known that this messageId was already rendered by the socket, and thus we are fetching a duplicate message
           // This is because database messages without the required properties of (messageContent, timestamp, ucid, etc...) do not get rendered
           setDatabaseMessages((past) => {
             if (!past) {
-              return { [messageId]: "Handled in session messages" };
+              return { [messageID]: "Handled in session messages" };
             } else {
               const updatedMessages = past;
-              updatedMessages[messageId] = "handled in session messages";
+              updatedMessages[messageID] = "handled in session messages";
               return past;
             }
           });
           socket.emit("message-sent", {
             messageContent: event.target.value,
+            messageID: messageID,
             sender: uuid,
             ucid: ucid,
           });
@@ -87,6 +88,9 @@ const Chat = ({
     }
   };
   // Return value of this function is every unique uuuid from the list of retrieved messages
+  // TODO: Problem: when a user does not have a chat open with a user B (any other user), they will receive the message from the websocket that comes from USER B
+  // TODO: This is fine, however it causes us to request the database for messages when we open the chat from User B, this causes us to render the websocket message
+  // TODO: AND the message from the database, we are rendering duplicate messages, figure this out
   async function getDatabaseMessages() {
     const result = await fetch(`/api/messages/${ucid}/50`, {
       method: "GET",
@@ -100,9 +104,7 @@ const Chat = ({
 
         responseJson.result.forEach((message) => {
           // Make sure the message id does not exist inside of sessionMessages, this will cause message duplicates to be rendered
-          if (message.messageId && !updatedMessages[message.messageId]) {
-            updatedMessages[message.messageId] = message;
-          }
+          updatedMessages[message.messageId] = message;
         });
 
         return updatedMessages; // Return the updated state
@@ -167,14 +169,12 @@ const Chat = ({
         });
       });
     });
-
-    console.log("messages: ", sessionMessages);
   }, [ucid]);
 
   // Whenever a new session message is received, scroll to the bottom of the chat box
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [sessionMessages]);
+  }, [sessionMessages, databaseMessages]);
 
   return (
     <div className="flex flex-col w-full h-screen max-h-screen">
@@ -184,12 +184,15 @@ const Chat = ({
 
         <div className="flex flex-col m-4 gap-2 mt-24">
           {Object.values(databaseMessages)
+            /* Create an array from databaseMessages object, then sort that array by timestamps */
             .concat(sessionMessages)
+            .sort((a, b) => a.timestamp - b.timestamp)
             .map((message, idx, array) =>
               message?.ucid === ucid ? (
                 <MessageBubble
                   messageContent={message?.messageContent}
-                  sender={chatterInfo[message?.sender_uuid]?.displayName}
+                  sender={message?.sender_uuid}
+                  displayName={chatterInfo[message?.sender_uuid]?.displayName}
                   timestamp={message?.timestamp}
                   fromClient={false}
                   key={idx}

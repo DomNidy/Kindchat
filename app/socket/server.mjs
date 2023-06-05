@@ -26,11 +26,11 @@ io.on("connection", async (socket) => {
   });
 
   // When a user sends a message
-  socket.on("message-sent", ({ messageContent, sender, ucid }) => {
-    console.log("received msg", { messageContent, sender, ucid });
+  socket.on("message-sent", ({ messageContent, messageID, sender, ucid }) => {
+    console.log("received msg", { messageContent, messageID, sender, ucid });
     socket.to(ucid).except(socket.id).emit("message-received", {
-      location: "from socket server",
       messageContent: messageContent,
+      messageID: messageID,
       sender_uuid: sender,
       ucid: ucid,
       fromClient: false,

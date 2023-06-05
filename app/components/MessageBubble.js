@@ -32,12 +32,12 @@ export const MessageBubble = ({
     fromClient === undefined
   ) {
     return (
-      <div className="bg-gray-600 rounded-xl p-1">
+      <div className="bg-gray-600 rounded-xl p-1 pt-0">
         <div className="flex flex-row gap-4">
-          <p className="text-md align-text-top font-semibold">
-            {sender} {displayName}
+          <p className="text-md align-text-top font-semibold">{displayName}</p>
+          <p className="font-normal text-sm text-gray-400 pt-[0.33rem]">
+            {timestampString}
           </p>
-          <p className="font-normal text-sm text-gray-400">{timestampString}</p>
         </div>
 
         <p className="text-md">{messageContent}</p>

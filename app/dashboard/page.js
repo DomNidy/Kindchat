@@ -46,17 +46,22 @@ export default function Dashboard() {
 
   // Add event listener for "message-received" event
   useEffect(() => {
-    console.log("added listener");
-
+    console.log("added 'message-received' event listener");
     socket.on("message-received", (message) => {
       console.log("GOT MSG", message);
       // Handle received message
       if (message.sender_uuid !== Cookies.get("uuid")) {
-        setSessionMessages((past) => {
-          if (past.length >= 1) {
-            return [...past, message];
-          }
-          return [message];
+        setDatabaseMessages((past) => {
+          const updatedMessages = { ...past };
+
+          updatedMessages[message.messageID] = {
+            messageContent: message.messageContent,
+            messageID: message.messageID,
+            sender_uuid: message.sender_uuid,
+            timestamp: message.timestamp,
+            ucid: message.ucid,
+          };
+          return updatedMessages;
         });
       }
     });
