@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
   
   // Attempt to retrieve
   let getChannelAccessResult = await userController.getChannelAccess(
-    uuid.value,
-    sessionToken.value
+    uuid?.value,
+    sessionToken?.value
   );
 
   // If friend request was sent successfully

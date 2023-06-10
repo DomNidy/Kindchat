@@ -7,8 +7,8 @@ export async function GET(req: NextRequest) {
 
   // Get incoming friend requests for the uuid
   let incomingRequests = await userController.getIncomingFriendRequests(
-    uuid.value,
-    sessionToken.value
+    uuid?.value,
+    sessionToken?.value
   );
 
   // If the user does not have any incoming friend requests
