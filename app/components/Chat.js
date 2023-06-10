@@ -88,9 +88,6 @@ const Chat = ({
     }
   };
   // Return value of this function is every unique uuuid from the list of retrieved messages
-  // TODO: Problem: when a user does not have a chat open with a user B (any other user), they will receive the message from the websocket that comes from USER B
-  // TODO: This is fine, however it causes us to request the database for messages when we open the chat from User B, this causes us to render the websocket message
-  // TODO: AND the message from the database, we are rendering duplicate messages, figure this out
   async function getDatabaseMessages() {
     const result = await fetch(`/api/messages/${ucid}/50`, {
       method: "GET",
